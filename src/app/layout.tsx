@@ -1,24 +1,6 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-
-import { CartProvider } from "./components/CartContext";
-import CartBar from "./components/CartBar"; // 👈 nuevo import
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
-export const metadata: Metadata = {
-  title: "Catálogo ",
-  description: "Mostrador de productos con gestión de stock y carrito.",
-};
+import Header from "./components/Header";
+import Providers from "./components/Providers";
 
 export default function RootLayout({
   children,
@@ -26,15 +8,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html
-      lang={typeof navigator !== "undefined" ? navigator.language.slice(0, 2) : "es"}
-      suppressHydrationWarning
-    >
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <CartProvider>
+    <html lang="es">
+      <body>
+        <Providers>
+          <Header />
           {children}
-          <CartBar /> {/* 👈 Barra del carrito visible en todo el sitio */}
-        </CartProvider>
+        </Providers>
       </body>
     </html>
   );
