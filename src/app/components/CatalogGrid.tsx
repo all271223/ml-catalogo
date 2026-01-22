@@ -23,15 +23,18 @@ export default function CatalogGrid({ products }: { products: Product[] }) {
 
   return (
     <>
-      {/* GRID */}
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+      {/* GRID (solo visual/UX) */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {products.map((p) => (
           <div
             key={p.id}
             className="text-left"
             onClick={() => setSelected(p)}
             onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") setSelected(p);
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                setSelected(p);
+              }
             }}
             role="button"
             tabIndex={0}
@@ -43,12 +46,7 @@ export default function CatalogGrid({ products }: { products: Product[] }) {
       </div>
 
       {/* MODAL */}
-      {selected && (
-        <ProductModal
-          p={selected}
-          onClose={() => setSelected(null)}
-        />
-      )}
+      {selected && <ProductModal p={selected} onClose={() => setSelected(null)} />}
     </>
   );
 }

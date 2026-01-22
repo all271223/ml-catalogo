@@ -14,6 +14,7 @@ export default function HeaderActions({
   const pathname = usePathname();
   const [loading, setLoading] = useState(false);
 
+  const isInScanArea = pathname.startsWith("/scan");
   const isOnScanLogin = pathname === "/scan/login";
 
   async function logout() {
@@ -27,10 +28,11 @@ export default function HeaderActions({
     }
   }
 
-  // Si NO estás logueado:
-  // - Si ya estás en /scan/login, NO muestres "Ir al escáner" (porque es el mismo lugar)
+  // 1) NO logueado:
+  // - dentro de /scan (incluye /scan/login): no mostramos nada
+  // - fuera de /scan: mostramos "Ir al escáner"
   if (!isScanAuthed) {
-    if (isOnScanLogin) return null;
+    if (isInScanArea) return null;
 
     return (
       <Link href="/scan/login" style={styles.button}>
@@ -39,7 +41,20 @@ export default function HeaderActions({
     );
   }
 
-  // Si estás logueado → acceso + cerrar sesión
+  // 2) Logueado:
+  // - en /scan/login: no mostramos nada
+  if (isOnScanLogin) return null;
+
+  // - fuera de /scan (ej: catálogo): NO mostrar "Cerrar sesión"
+  if (!isInScanArea) {
+    return (
+      <Link href="/scan" style={styles.button}>
+        Escáner
+      </Link>
+    );
+  }
+
+  // - dentro de /scan: sí mostramos "Cerrar sesión"
   return (
     <>
       <Link href="/scan" style={styles.button}>

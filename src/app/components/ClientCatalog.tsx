@@ -30,7 +30,6 @@ export default function ClientCatalog() {
       setLoading(true);
       setErr(null);
       try {
-        // 1) Query principal (sin order por si created_at no existe)
         const { data, error, status } = await supabasePublic
           .from("products")
           .select(
@@ -40,7 +39,6 @@ export default function ClientCatalog() {
           .limit(200);
 
         if (error) {
-          // mostrémoslo con máximo detalle
           throw new Error(
             `PostgREST ${status ?? ""} - ${error.message || ""} ${
               (error as any).details ? " | " + (error as any).details : ""
@@ -51,7 +49,6 @@ export default function ClientCatalog() {
         if (!alive) return;
         setProducts((data ?? []) as Product[]);
       } catch (e: any) {
-        // Captura robusta
         const msg =
           e?.message ||
           e?.error ||
@@ -70,21 +67,40 @@ export default function ClientCatalog() {
     };
   }, []);
 
-  if (loading) {
-    return <div className="p-6 text-sm text-gray-600">Cargando catálogo…</div>;
-  }
-
-  if (err) {
-    return (
-      <div className="p-6 text-sm text-red-600">
-        Error cargando productos: {err}
+  return (
+    <div className="space-y-6">
+      {/* Encabezado (solo visual/UX) */}
+      <div className="flex items-end justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-semibold text-gray-900">Catálogo</h1>
+          <p className="text-sm text-gray-600">
+            {loading ? "Cargando productos…" : `${products.length} productos`}
+          </p>
+        </div>
       </div>
-    );
-  }
 
-  if (!products.length) {
-    return <div className="p-6 text-sm text-gray-600">No hay productos.</div>;
-  }
+      {/* Contenido */}
+      {loading && (
+        <div className="rounded-xl border border-gray-200 bg-white p-4 text-sm text-gray-600">
+          Cargando catálogo…
+        </div>
+      )}
 
-  return <CatalogGrid products={products} />;
+      {!loading && err && (
+        <div className="rounded-xl border border-red-200 bg-white p-4 text-sm text-red-700">
+          Error cargando productos: {err}
+        </div>
+      )}
+
+      {!loading && !err && !products.length && (
+        <div className="rounded-xl border border-gray-200 bg-white p-4 text-sm text-gray-600">
+          No hay productos.
+        </div>
+      )}
+
+      {!loading && !err && products.length > 0 && (
+        <CatalogGrid products={products} />
+      )}
+    </div>
+  );
 }

@@ -1,11 +1,11 @@
-// src/app/page.tsx
 import ClientCatalog from "./components/ClientCatalog";
 
-export default function HomePage() {
+export default function Page() {
   return (
-    <main className="mx-auto max-w-6xl p-6">
-      <h1 className="mb-4 text-2xl font-bold">Catálogo</h1>
-      <ClientCatalog />
+    <main className="min-h-screen bg-gray-100">
+      <section className="mx-auto w-full max-w-7xl px-4 py-6">
+        <ClientCatalog />
+      </section>
     </main>
   );
 }

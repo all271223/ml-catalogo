@@ -37,7 +37,10 @@ export default function ScanLoginPage() {
     <main className="mx-auto max-w-md p-6">
       <h1 className="mb-4 text-2xl font-bold">Acceso a Escáner</h1>
 
-      <form onSubmit={submit} className="space-y-3 rounded-xl border bg-white p-4">
+      <form
+        onSubmit={submit}
+        className="space-y-3 rounded-xl border bg-white p-4"
+      >
         <div>
           <label className="block text-sm font-medium">Contraseña</label>
           <input
@@ -62,7 +65,11 @@ export default function ScanLoginPage() {
       </form>
 
       <p className="mt-3 text-xs text-gray-500">
-        Si no tienes la clave, vuelve al <a className="underline" href="/">catálogo</a>.
+        Si no tienes la clave, vuelve al{" "}
+        <a className="underline" href="/">
+          catálogo
+        </a>
+        .
       </p>
     </main>
   );

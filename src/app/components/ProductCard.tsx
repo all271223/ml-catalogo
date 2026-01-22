@@ -21,14 +21,15 @@ export default function ProductCard({ p }: { p: Product }) {
   const src = imagePublicUrl(p.image_url);
 
   return (
-    <article className="group rounded-2xl border bg-white p-3 shadow-sm transition hover:shadow-md">
+    <article className="group rounded-2xl border border-gray-200 bg-white p-3 shadow-sm transition hover:-translate-y-[1px] hover:shadow-md focus-within:ring-2 focus-within:ring-gray-300">
       {/* Imagen */}
       <div className="aspect-square w-full overflow-hidden rounded-xl bg-gray-100">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={src}
           alt={p.name}
-          className="h-full w-full object-cover transition group-hover:scale-[1.02]"
+          loading="lazy"
+          className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-[1.03]"
         />
       </div>
 
@@ -38,7 +39,7 @@ export default function ProductCard({ p }: { p: Product }) {
           <div className="text-xs font-medium text-gray-500">{p.brand}</div>
         )}
 
-        <h3 className="line-clamp-2 text-sm font-semibold text-gray-800">
+        <h3 className="line-clamp-2 text-sm font-semibold text-gray-900">
           {p.name}
         </h3>
 
@@ -46,13 +47,13 @@ export default function ProductCard({ p }: { p: Product }) {
           <div className="text-xs text-gray-500">Tienda: {p.store}</div>
         )}
 
-        <div className="mt-1 flex items-center justify-between">
-          <span className="text-lg font-semibold">
+        <div className="mt-2 flex items-center justify-between gap-2">
+          <span className="text-base font-semibold text-gray-900">
             ${Intl.NumberFormat("es-CL").format(Number(p.price) || 0)}
           </span>
 
           <span
-            className={`rounded-full px-2 py-0.5 text-xs ${
+            className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
               p.stock > 0
                 ? "bg-emerald-50 text-emerald-700"
                 : "bg-gray-100 text-gray-500"
@@ -66,14 +67,14 @@ export default function ProductCard({ p }: { p: Product }) {
         {/* Botón agregar al carrito */}
         <button
           onClick={(e) => {
-            e.stopPropagation(); // 👈 evita abrir el modal
+            e.stopPropagation(); // evita abrir el modal
             addItem(p);
           }}
           disabled={p.stock <= 0}
-          className={`mt-2 w-full rounded-md px-3 py-2 text-sm font-medium transition ${
+          className={`mt-3 w-full rounded-lg px-3 py-2 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-offset-2 ${
             p.stock > 0
-              ? "bg-green-600 text-white hover:bg-green-700"
-              : "bg-gray-300 text-gray-600 cursor-not-allowed"
+              ? "bg-green-600 text-white hover:bg-green-700 focus:ring-green-600"
+              : "cursor-not-allowed bg-gray-200 text-gray-500"
           }`}
         >
           {p.stock > 0 ? "Agregar al carrito" : "Sin stock"}
