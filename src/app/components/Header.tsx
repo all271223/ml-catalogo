@@ -2,13 +2,21 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import HeaderActions from "./HeaderActions";
+import { headerStyles as styles } from "./header.styles";
 
-export default function Header() {
-  const isScanAuthed = cookies().has("scan_auth");
+export default async function Header() {
+  const cookieStore = await cookies();
+  const isScanAuthed = cookieStore.has("scan_auth");
 
-  // Flag simple para mostrar/ocultar el acceso al escáner (opcional)
+  /**
+   * Mostrar acceso a escáner:
+   * - En desarrollo (localhost): SI
+   * - En producción: NO
+   * - Forzar en producción: SHOW_SCAN_BUTTON=true
+   */
   const showScan =
-    process.env.NEXT_PUBLIC_SHOW_SCAN_BUTTON?.toLowerCase() !== "false";
+    process.env.NODE_ENV === "development" ||
+    process.env.SHOW_SCAN_BUTTON?.toLowerCase() === "true";
 
   return (
     <header style={styles.header}>
@@ -28,26 +36,3 @@ export default function Header() {
     </header>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  header: {
-    borderBottom: "1px solid #e5e5e5",
-    padding: "12px 0",
-    position: "sticky",
-    top: 0,
-    background: "white",
-    zIndex: 50,
-  },
-  container: {
-    maxWidth: 1100,
-    margin: "0 auto",
-    padding: "0 16px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 16,
-  },
-  brand: { fontWeight: 700, textDecoration: "none", color: "#111" },
-  nav: { display: "flex", alignItems: "center", gap: 12 },
-  link: { textDecoration: "none", color: "#111" },
-};
