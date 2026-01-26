@@ -3,14 +3,15 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function ScanLoginPage() {
-  const [password, setPassword] = useState("");
+  const [password, setPassword] = useState<string>("");
   const [err, setErr] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<boolean>(false);
   const router = useRouter();
 
-  async function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setErr(null);
     setLoading(true);
@@ -22,12 +23,19 @@ export default function ScanLoginPage() {
         body: JSON.stringify({ password }),
       });
 
-      const json = await res.json();
-      if (!res.ok) throw new Error(json?.error || "Clave incorrecta");
+      const json: { error?: string } = await res.json();
+
+      if (!res.ok) {
+        throw new Error(json.error ?? "Clave incorrecta");
+      }
 
       router.replace("/scan");
-    } catch (e: any) {
-      setErr(e?.message ?? "Clave incorrecta");
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        setErr(error.message);
+      } else {
+        setErr("Clave incorrecta");
+      }
     } finally {
       setLoading(false);
     }
@@ -66,9 +74,9 @@ export default function ScanLoginPage() {
 
       <p className="mt-3 text-xs text-gray-500">
         Si no tienes la clave, vuelve al{" "}
-        <a className="underline" href="/">
+        <Link href="/" className="underline">
           catálogo
-        </a>
+        </Link>
         .
       </p>
     </main>

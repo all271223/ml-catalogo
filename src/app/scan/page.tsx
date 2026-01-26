@@ -14,19 +14,27 @@ type SearchItem = {
   price: number | null;
 };
 
+type ProductSearchResponse = {
+  items?: SearchItem[];
+};
+
+type StockMoveResponse = {
+  error?: string;
+};
+
 export default function ScanPage() {
-  const [code, setCode] = useState("");
+  const [code, setCode] = useState<string>("");
   const [qty, setQty] = useState<number>(1);
   const [moveType, setMoveType] = useState<"IN" | "OUT">("IN");
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<boolean>(false);
 
   // 🔍 búsqueda
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [query, setQuery] = useState("");
+  const [searchOpen, setSearchOpen] = useState<boolean>(false);
+  const [query, setQuery] = useState<string>("");
   const [results, setResults] = useState<SearchItem[]>([]);
-  const [searching, setSearching] = useState(false);
+  const [searching, setSearching] = useState<boolean>(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
@@ -69,21 +77,25 @@ export default function ScanPage() {
         }),
       });
 
-      const json = await res.json();
-      if (!res.ok) throw new Error(json?.error || "Error desconocido");
+      const json: StockMoveResponse = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "Error desconocido");
 
       setMsg(`✔ ${moveType} x${qty} aplicado`);
       setCode("");
       setQty(1);
       inputRef.current?.focus();
-    } catch (e: any) {
-      setErr(e?.message ?? String(e));
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        setErr(error.message);
+      } else {
+        setErr(String(error));
+      }
     } finally {
       setLoading(false);
     }
   }
 
-  async function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!loading) await runSubmit();
   }
@@ -108,7 +120,7 @@ export default function ScanPage() {
     setSearching(true);
     try {
       const res = await fetch(`/api/product-search?q=${encodeURIComponent(q)}`);
-      const json = await res.json();
+      const json: ProductSearchResponse = await res.json();
       setResults(json.items ?? []);
     } catch {
       setResults([]);
@@ -181,14 +193,10 @@ export default function ScanPage() {
             autoFocus
           />
 
-          {searching && (
-            <div className="text-sm text-gray-500">Buscando…</div>
-          )}
+          {searching && <div className="text-sm text-gray-500">Buscando…</div>}
 
           {!searching && results.length === 0 && query && (
-            <div className="text-sm text-gray-500">
-              Sin resultados
-            </div>
+            <div className="text-sm text-gray-500">Sin resultados</div>
           )}
 
           <ul className="divide-y">
@@ -224,9 +232,7 @@ export default function ScanPage() {
         className="space-y-3 rounded-xl border bg-white p-4"
       >
         <div>
-          <label className="block text-sm font-medium">
-            Código
-          </label>
+          <label className="block text-sm font-medium">Código</label>
           <input
             ref={inputRef}
             value={code}

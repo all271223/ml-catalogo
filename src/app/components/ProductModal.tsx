@@ -1,9 +1,10 @@
 // src/app/components/ProductModal.tsx
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useCart } from "./CartContext";
 import { imagePublicUrl } from "../lib/images";
+import { buildWhatsAppMessage } from "./wa";
 
 type Product = {
   id: string;
@@ -22,17 +23,37 @@ export default function ProductModal({
   p,
   onClose,
 }: {
-  p?: Product | null; // 👈 puede venir undefined/null
+  p?: Product | null;
   onClose: () => void;
 }) {
-  // Si no hay producto aún, no renderizamos el modal
-  if (!p) return null;
-
+  // ✅ Hooks SIEMPRE antes de cualquier return condicional
   const { addItem } = useCart();
   const [qty, setQty] = useState<number>(1);
 
+  // ✅ Hook también antes del return (usa optional chaining para no romper)
+  const total = useMemo(() => (Number(p?.price) || 0) * qty, [p?.price, qty]);
+
+  // ✅ Ahora sí, return condicional
+  if (!p) return null;
+
   const src = imagePublicUrl(p.image_url ?? null);
   const canAdd = p.stock > 0 && qty > 0 && qty <= p.stock;
+
+  const handleBuyNow = () => {
+    if (!canAdd) return;
+
+    const items = [
+      {
+        id: p.id,
+        name: p.name,
+        price: Number(p.price) || 0,
+        qty,
+      },
+    ];
+
+    const url = buildWhatsAppMessage(items, total);
+    window.open(url, "_blank");
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
@@ -83,6 +104,7 @@ export default function ProductModal({
                   copiar
                 </button>
               </div>
+
               <div className="mt-1 text-gray-500">
                 <span className="mr-2">Barcode:</span>
                 <code className="rounded bg-gray-100 px-1 py-0.5">
@@ -107,6 +129,7 @@ export default function ProductModal({
               <div className="text-2xl font-semibold">
                 ${Intl.NumberFormat("es-CL").format(Number(p.price) || 0)}
               </div>
+
               <span
                 className={`rounded-full px-2 py-0.5 text-xs ${
                   p.stock > 0
@@ -119,31 +142,53 @@ export default function ProductModal({
               </span>
             </div>
 
-            {/* Cantidad + Agregar */}
-            <div className="flex items-center gap-3 pt-2">
-              <input
-                type="number"
-                min={1}
-                max={p.stock}
-                value={qty}
-                onChange={(e) =>
-                  setQty(
-                    Math.min(Math.max(1, Number(e.target.value) || 1), p.stock)
-                  )
-                }
-                className="w-24 rounded-md border px-2 py-1 text-sm"
-              />
+            {/* Cantidad + Acciones */}
+            <div className="space-y-2 pt-2">
+              <div className="flex items-center gap-3">
+                <input
+                  type="number"
+                  min={1}
+                  max={p.stock}
+                  value={qty}
+                  onChange={(e) =>
+                    setQty(
+                      Math.min(
+                        Math.max(1, Number(e.target.value) || 1),
+                        p.stock
+                      )
+                    )
+                  }
+                  className="w-24 rounded-md border px-2 py-1 text-sm"
+                />
+
+                <button
+                  onClick={() => canAdd && addItem(p, qty)} // ✅ qty como 2° argumento
+                  disabled={!canAdd}
+                  className={`rounded-md px-4 py-2 text-sm font-medium ${
+                    canAdd
+                      ? "bg-green-600 text-white hover:bg-green-700"
+                      : "cursor-not-allowed bg-gray-300 text-gray-600"
+                  }`}
+                >
+                  Agregar al carrito
+                </button>
+              </div>
+
               <button
-                onClick={() => canAdd && addItem(p, qty)} // ✅ qty como 2° argumento
+                onClick={handleBuyNow}
                 disabled={!canAdd}
-                className={`rounded-md px-4 py-2 text-sm font-medium ${
+                className={`w-full rounded-md px-4 py-2 text-sm font-semibold ${
                   canAdd
-                    ? "bg-green-600 text-white hover:bg-green-700"
-                    : "cursor-not-allowed bg-gray-300 text-gray-600"
+                    ? "border border-black text-black hover:bg-gray-100"
+                    : "cursor-not-allowed bg-gray-200 text-gray-500"
                 }`}
               >
-                Agregar al carrito
+                Comprar ahora por WhatsApp
               </button>
+
+              <p className="text-center text-xs text-gray-500">
+                Te responderemos por WhatsApp para coordinar pago y despacho.
+              </p>
             </div>
           </div>
         </div>

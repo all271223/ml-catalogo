@@ -12,18 +12,32 @@ function normalizeMoveType(s: string): "IN" | "OUT" | "" {
   const u = s.trim().toUpperCase();
   if (u.startsWith("IN")) return "IN";
   if (u.startsWith("OUT")) return "OUT";
-  return "" as const;
+  return "";
 }
+
+type StockMoveBody = {
+  code?: unknown;
+  sku?: unknown;
+  barcode?: unknown;
+  move_type?: unknown;
+  qty?: unknown;
+  source?: unknown;
+  user_label?: unknown;
+};
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
+    const body = (await req.json()) as StockMoveBody;
 
-    const code = String(body.code ?? body.sku ?? body.barcode ?? "").trim();
-    const move_type = normalizeMoveType(String(body.move_type ?? "")); // IN / OUT
+    const code = String(
+      body.code ?? body.sku ?? body.barcode ?? ""
+    ).trim();
+
+    const move_type = normalizeMoveType(String(body.move_type ?? ""));
     const qty = Number(body.qty ?? 0);
     const source = String(body.source ?? "scan");
-    const user_label = body.user_label ? String(body.user_label) : null;
+    const user_label =
+      typeof body.user_label === "string" ? body.user_label : null;
 
     if (!code) {
       return NextResponse.json(
@@ -31,19 +45,21 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+
     if (!move_type) {
       return NextResponse.json(
         { error: "move_type debe ser IN u OUT" },
         { status: 400 }
       );
     }
+
     if (!Number.isFinite(qty) || qty <= 0) {
-      return NextResponse.json({ error: "qty debe ser > 0" }, { status: 400 });
+      return NextResponse.json(
+        { error: "qty debe ser > 0" },
+        { status: 400 }
+      );
     }
 
-    // ✅ Usa la función REAL que tienes en Supabase:
-    // apply_stock_move(p_barcode text, p_type text, p_qty integer, p_source text, p_user_label text)
-    // returns setof record (product_id, out_sku, out_name, new_stock, etc.)
     const { data, error } = await supabaseAdmin.rpc("apply_stock_move", {
       p_barcode: code,
       p_type: move_type,
@@ -59,11 +75,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // data suele venir como array (SETOF record). Tomamos el primero.
     const row = Array.isArray(data) ? data[0] : data;
 
     if (!row) {
-      // Si tu función devuelve vacío cuando no encuentra producto
       return NextResponse.json(
         { error: `No se encontró producto para código '${code}'` },
         { status: 404 }
@@ -81,9 +95,12 @@ export async function POST(req: NextRequest) {
       },
       { status: 200 }
     );
-  } catch (e: any) {
+  } catch (error: unknown) {
+    const message =
+      error instanceof Error ? error.message : "Error inesperado";
+
     return NextResponse.json(
-      { error: e?.message ?? String(e) },
+      { error: message },
       { status: 500 }
     );
   }

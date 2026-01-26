@@ -8,13 +8,25 @@ const supabaseAdmin = createClient(
   { auth: { persistSession: false } }
 );
 
+type ProductSearchItem = {
+  id: string;
+  name: string;
+  sku: string | null;
+  barcode: string | null;
+  stock: number;
+  price: number | null;
+};
+
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const q = (searchParams.get("q") ?? "").trim();
 
     if (!q) {
-      return NextResponse.json({ ok: true, items: [] }, { status: 200 });
+      return NextResponse.json(
+        { ok: true, items: [] as ProductSearchItem[] },
+        { status: 200 }
+      );
     }
 
     const { data, error } = await supabaseAdmin
@@ -31,10 +43,16 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    return NextResponse.json({ ok: true, items: data ?? [] }, { status: 200 });
-  } catch (e: any) {
     return NextResponse.json(
-      { error: e?.message ?? String(e) },
+      { ok: true, items: (data ?? []) as ProductSearchItem[] },
+      { status: 200 }
+    );
+  } catch (error: unknown) {
+    const message =
+      error instanceof Error ? error.message : "Error inesperado";
+
+    return NextResponse.json(
+      { error: message },
       { status: 500 }
     );
   }
