@@ -6,7 +6,6 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const password = String(body?.password ?? "");
-
     const expected = process.env.SCAN_PASSWORD || "";
 
     if (!expected) {
@@ -22,15 +21,20 @@ export async function POST(req: NextRequest) {
 
     const res = NextResponse.json({ ok: true }, { status: 200 });
 
+    // ✅ Sesión del escáner con expiración (recomendado)
+    // 8 horas = 8 * 60 * 60
     res.cookies.set("scan_auth", "1", {
       httpOnly: true,
       sameSite: "lax",
       path: "/",
-      maxAge: 60 * 60 * 24 * 7,
+      maxAge: 8 * 60 * 60,
     });
 
     return res;
   } catch (e: any) {
-    return NextResponse.json({ error: e?.message ?? String(e) }, { status: 500 });
+    return NextResponse.json(
+      { error: e?.message ?? String(e) },
+      { status: 500 }
+    );
   }
 }

@@ -3,22 +3,45 @@
 
 import { useCart } from "./CartContext";
 import { imagePublicUrl } from "../lib/images";
+import { buildWhatsAppMessage } from "./wa";
 
 type Product = {
   id: string;
   name: string;
   price: number | null;
   stock: number;
-  image_url?: string | null; // alias de image_path en la query
+  image_url?: string | null;
   brand?: string | null;
   store?: string | null;
   sku?: string | null;
   barcode?: string | null;
 };
 
+function onlyDigits(s: string) {
+  return (s || "").replace(/\D/g, "");
+}
+
 export default function ProductCard({ p }: { p: Product }) {
   const { addItem } = useCart();
   const src = imagePublicUrl(p.image_url);
+  const phone = onlyDigits(process.env.NEXT_PUBLIC_WHATSAPP_PHONE || "");
+
+  function buyNow() {
+    addItem(p);
+
+    if (!phone) {
+      alert("Configura NEXT_PUBLIC_WHATSAPP_PHONE para enviar por WhatsApp.");
+      return;
+    }
+
+    const msg = buildWhatsAppMessage(
+      [{ id: p.id, name: p.name, price: p.price, qty: 1 }],
+      Number(p.price) || 0
+    );
+
+    const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
+    window.open(waUrl, "_blank", "noopener,noreferrer");
+  }
 
   return (
     <article className="group rounded-2xl border border-gray-200 bg-white p-3 shadow-sm transition hover:-translate-y-[1px] hover:shadow-md focus-within:ring-2 focus-within:ring-gray-300">
@@ -64,21 +87,43 @@ export default function ProductCard({ p }: { p: Product }) {
           </span>
         </div>
 
-        {/* Botón agregar al carrito */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation(); // evita abrir el modal
-            addItem(p);
-          }}
-          disabled={p.stock <= 0}
-          className={`mt-3 w-full rounded-lg px-3 py-2 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-            p.stock > 0
-              ? "bg-green-600 text-white hover:bg-green-700 focus:ring-green-600"
-              : "cursor-not-allowed bg-gray-200 text-gray-500"
-          }`}
-        >
-          {p.stock > 0 ? "Agregar al carrito" : "Sin stock"}
-        </button>
+        {/* Acciones */}
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              addItem(p);
+            }}
+            disabled={p.stock <= 0}
+            className={`w-full rounded-lg px-3 py-2 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+              p.stock > 0
+                ? "bg-green-600 text-white hover:bg-green-700 focus:ring-green-600"
+                : "cursor-not-allowed bg-gray-200 text-gray-500"
+            }`}
+          >
+            {p.stock > 0 ? "Agregar" : "Sin stock"}
+          </button>
+
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              buyNow();
+            }}
+            disabled={p.stock <= 0}
+            className={`w-full rounded-lg px-3 py-2 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+              p.stock > 0
+                ? "bg-emerald-600 text-white hover:bg-emerald-700 focus:ring-emerald-600"
+                : "cursor-not-allowed bg-gray-200 text-gray-500"
+            }`}
+          >
+            Comprar
+          </button>
+        </div>
+
+        {/* Mensaje de confianza */}
+        <p className="mt-2 text-center text-xs text-gray-500">
+          Te responderemos por WhatsApp para coordinar pago y despacho.
+        </p>
       </div>
     </article>
   );
