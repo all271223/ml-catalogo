@@ -41,7 +41,8 @@ export default function ClientCatalog() {
           barcode
         `
         )
-        .eq("active", true)
+        // ✅ en tu proyecto el flag visible es is_visible (no "active")
+        .eq("is_visible", true)
         .order("name");
 
       if (!error && data) {
