@@ -9,7 +9,7 @@ export type CatalogProduct = {
   name: string;
   price: number | null;
   stock: number;
-  image_url?: string | null;
+  image_url?: string | null; // usamos alias desde image_path
   brand?: string | null;
   store?: string | null;
   description?: string | null;
@@ -20,10 +20,12 @@ export type CatalogProduct = {
 export default function ClientCatalog() {
   const [products, setProducts] = useState<CatalogProduct[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
       setLoading(true);
+      setErrorMsg(null);
 
       const { data, error } = await supabasePublic
         .from("products")
@@ -33,7 +35,7 @@ export default function ClientCatalog() {
           name,
           price,
           stock,
-          image_url,
+          image_url:image_path,
           brand,
           store,
           description,
@@ -41,12 +43,15 @@ export default function ClientCatalog() {
           barcode
         `
         )
-        // ✅ en tu proyecto el flag visible es is_visible (no "active")
         .eq("is_visible", true)
         .order("name");
 
-      if (!error && data) {
-        setProducts(data as CatalogProduct[]);
+      if (error) {
+        console.error("Supabase products error:", error);
+        setErrorMsg(error.message);
+        setProducts([]);
+      } else {
+        setProducts((data ?? []) as CatalogProduct[]);
       }
 
       setLoading(false);
@@ -59,6 +64,14 @@ export default function ClientCatalog() {
     return (
       <div className="flex justify-center py-10 text-sm text-gray-500">
         Cargando catálogo…
+      </div>
+    );
+  }
+
+  if (errorMsg) {
+    return (
+      <div className="mx-auto max-w-2xl rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+        Error cargando catálogo: {errorMsg}
       </div>
     );
   }
