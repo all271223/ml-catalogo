@@ -9,7 +9,7 @@ export type CatalogProduct = {
   name: string;
   price: number | null;
   stock: number;
-  image_url?: string | null; // usamos alias desde image_path
+  image_url?: string | null; // viene como alias de image_path
   brand?: string | null;
   store?: string | null;
   description?: string | null;
@@ -19,7 +19,7 @@ export type CatalogProduct = {
 
 export default function ClientCatalog() {
   const [products, setProducts] = useState<CatalogProduct[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
@@ -44,10 +44,9 @@ export default function ClientCatalog() {
         `
         )
         .eq("is_visible", true)
-        .order("name");
+        .order("name", { ascending: true });
 
       if (error) {
-        console.error("Supabase products error:", error);
         setErrorMsg(error.message);
         setProducts([]);
       } else {
@@ -70,7 +69,7 @@ export default function ClientCatalog() {
 
   if (errorMsg) {
     return (
-      <div className="mx-auto max-w-2xl rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+      <div className="mx-auto max-w-xl rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
         Error cargando catálogo: {errorMsg}
       </div>
     );
