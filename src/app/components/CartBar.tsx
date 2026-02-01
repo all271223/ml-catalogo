@@ -1,71 +1,63 @@
 "use client";
 
+import { useMemo } from "react";
 import { useCart } from "./CartContext";
 import { buildWhatsAppMessage } from "./wa";
-
-function onlyDigits(s: string) {
-  return (s || "").replace(/\D/g, "");
-}
 
 export default function CartBar() {
   const { items, total, clear } = useCart();
 
-  const rawPhone = process.env.NEXT_PUBLIC_WHATSAPP_PHONE || ""; // ej: 56912345678
-  const phone = onlyDigits(rawPhone);
+  const disabled = items.length === 0;
 
-  const msg = buildWhatsAppMessage(
-    items.map((i) => ({ id: i.id, name: i.name, price: i.price, qty: i.qty })),
-    total
-  );
+  const waUrl = useMemo(() => {
+    // Convertimos price null -> 0 para no romper tipos ni el mensaje
+    const waItems = items.map((i) => ({
+      name: i.name,
+      price: Number(i.price) || 0,
+      qty: i.qty,
+    }));
 
-  const waUrl = phone
-    ? `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`
-    : "";
+    return buildWhatsAppMessage(waItems, Number(total) || 0);
+  }, [items, total]);
 
-  if (!items.length) {
-    return (
-      <div className="mx-auto mb-3 max-w-6xl px-3">
-        <div className="rounded-2xl bg-white/95 p-3 text-sm text-gray-600 shadow ring-1 ring-black/5 backdrop-blur">
-          Carrito vacío
-        </div>
-      </div>
-    );
+  function handleSendWhatsApp() {
+    if (disabled) return;
+
+    // ✅ Esto evita que el navegador trate el link como “compartir”
+    // y lo abre como navegación directa (igual que en el modal)
+    window.open(waUrl, "_blank", "noopener,noreferrer");
   }
 
   return (
-    <div className="mx-auto mb-3 max-w-6xl px-3">
-      <div className="flex flex-col gap-3 rounded-2xl bg-white/95 p-3 shadow-lg ring-1 ring-black/5 backdrop-blur md:flex-row md:items-center md:justify-between">
-        <div className="text-sm">
-          <strong>{items.reduce((a, b) => a + b.qty, 0)}</strong> ítem(s) ·{" "}
-          <strong>${new Intl.NumberFormat("es-CL").format(total)}</strong>
+    <div className="sticky top-0 z-40 border-b bg-white/90 backdrop-blur">
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
+        <div className="min-w-0">
+          <div className="text-sm font-semibold">
+            Carrito: {items.reduce((acc, i) => acc + i.qty, 0)} item(s)
+          </div>
+          <div className="text-xs text-gray-600">
+            Total: ${Intl.NumberFormat("es-CL").format(Number(total) || 0)}
+          </div>
         </div>
 
-        <div className="flex flex-1 flex-wrap justify-end gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           <button
+            type="button"
             onClick={clear}
-            className="rounded-lg border px-3 py-2 text-sm hover:bg-gray-50"
-            aria-label="Vaciar carrito"
+            disabled={disabled}
+            className="rounded-md border px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
           >
             Vaciar
           </button>
 
-          {waUrl ? (
-            <button
-              type="button"
-              onClick={() => {
-                // abre WhatsApp de forma robusta
-                window.open(waUrl, "_blank", "noopener,noreferrer");
-                // si quieres limpiar después de “enviar”, lo hacemos en el próximo paso
-              }}
-              className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
-            >
-              Enviar por WhatsApp
-            </button>
-          ) : (
-            <span className="rounded-lg bg-gray-300 px-4 py-2 text-sm text-white">
-              Configura NEXT_PUBLIC_WHATSAPP_PHONE
-            </span>
-          )}
+          <button
+            type="button"
+            onClick={handleSendWhatsApp}
+            disabled={disabled}
+            className="rounded-md bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Enviar por WhatsApp
+          </button>
         </div>
       </div>
     </div>
