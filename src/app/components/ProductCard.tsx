@@ -34,13 +34,13 @@ export default function ProductCard({ p }: { p: Product }) {
       return;
     }
 
-    const msg = buildWhatsAppMessage(
-      [{ id: p.id, name: p.name, price: p.price, qty: 1 }],
-      Number(p.price) || 0
-    );
+    const price = Number(p.price) || 0;
 
-    const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
-    window.open(waUrl, "_blank", "noopener,noreferrer");
+    // ✅ price siempre number
+    // ✅ NO mandamos id porque WAItem no lo tiene
+    const url = buildWhatsAppMessage([{ name: p.name, price, qty: 1 }], price);
+
+    window.open(url, "_blank", "noopener,noreferrer");
   }
 
   return (
