@@ -18,12 +18,13 @@ export default function CartCheckoutModal({
     if (!hasItems) return "";
     return buildWhatsAppMessage(
       items.map((i) => ({
+        // ⚠️ si tu WAItem no tiene id, puedes borrar esta línea sin problema
         id: i.id,
         name: i.name,
-        price: Number(i.price) || 0, // ✅ fuerza number
+        price: Number(i.price) || 0,
         qty: i.qty,
       })),
-      total
+      Number(total) || 0
     );
   }, [items, total, hasItems]);
 
@@ -40,11 +41,20 @@ export default function CartCheckoutModal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-xl rounded-2xl bg-white shadow-xl">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
+      <div className="w-full max-w-xl overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/5">
         {/* Header */}
-        <div className="flex items-center justify-between border-b px-5 py-4">
-          <h2 className="text-lg font-semibold">Finalizar por WhatsApp</h2>
+        <div className="flex items-start justify-between gap-3 border-b px-5 py-4">
+          <div className="min-w-0">
+            <h2 className="text-lg font-semibold text-gray-900">
+              Finalizar por WhatsApp
+            </h2>
+            <p className="mt-1 text-sm text-gray-600">
+              Revisa tu pedido y envíalo. Te respondemos para coordinar pago y
+              despacho.
+            </p>
+          </div>
+
           <button
             onClick={onClose}
             className="rounded-full px-3 py-1 text-sm text-gray-600 hover:bg-gray-100"
@@ -57,79 +67,96 @@ export default function CartCheckoutModal({
         {/* Body */}
         <div className="p-5">
           {!hasItems ? (
-            <div className="text-sm text-gray-600">Tu carrito está vacío.</div>
+            <div className="rounded-xl border bg-gray-50 p-4 text-sm text-gray-700">
+              Tu carrito está vacío.
+            </div>
           ) : (
             <div className="space-y-4">
-              <div className="rounded-xl border bg-white p-3">
-                <div className="mb-2 text-sm font-semibold">Resumen</div>
+              {/* Resumen */}
+              <div className="rounded-2xl border bg-white p-4">
+                <div className="mb-3 text-sm font-semibold text-gray-900">
+                  Resumen del pedido
+                </div>
 
-                <ul className="space-y-2 text-sm text-gray-700">
+                <ul className="divide-y text-sm">
                   {items.map((it) => (
-                    <li
-                      key={it.id}
-                      className="flex items-start justify-between gap-3"
-                    >
-                      <div className="min-w-0">
-                        <div className="truncate">{it.name}</div>
-                        <div className="text-xs text-gray-500">
+                    <li key={it.id} className="flex items-start gap-3 py-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate font-medium text-gray-900">
+                          {it.name}
+                        </div>
+                        <div className="mt-0.5 text-xs text-gray-500">
                           Cantidad: {it.qty}
                         </div>
                       </div>
-                      <div className="shrink-0 font-medium">
-                        $
-                        {new Intl.NumberFormat("es-CL").format(
-                          (Number(it.price) || 0) * it.qty
-                        )}
+
+                      <div className="shrink-0 text-right">
+                        <div className="font-semibold text-gray-900">
+                          $
+                          {new Intl.NumberFormat("es-CL").format(
+                            (Number(it.price) || 0) * it.qty
+                          )}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          $
+                          {new Intl.NumberFormat("es-CL").format(
+                            Number(it.price) || 0
+                          )}
+                          {" "}c/u
+                        </div>
                       </div>
                     </li>
                   ))}
                 </ul>
 
-                <div className="mt-3 flex items-center justify-between border-t pt-3 text-sm">
-                  <span className="text-gray-600">Total</span>
-                  <span className="font-semibold">
-                    ${new Intl.NumberFormat("es-CL").format(total)}
-                  </span>
+                {/* Total destacado */}
+                <div className="mt-4 rounded-xl bg-gray-50 p-4">
+                  <div className="text-xs font-medium text-gray-600">Total</div>
+                  <div className="mt-1 text-2xl font-semibold text-gray-900">
+                    ${new Intl.NumberFormat("es-CL").format(Number(total) || 0)}
+                  </div>
                 </div>
-              </div>
 
-              <p className="text-center text-xs text-gray-500">
-                Se abrirá WhatsApp con tu pedido listo. Tú solo lo envías ✅
-              </p>
+                <p className="mt-3 text-center text-xs text-gray-500">
+                  Se abrirá WhatsApp con tu pedido listo. Tú solo lo envías ✅
+                </p>
+              </div>
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="flex flex-col gap-2 border-t px-5 py-4 md:flex-row md:justify-end">
-          <button
-            onClick={onClose}
-            className="w-full rounded-lg border px-4 py-2 text-sm hover:bg-gray-50 md:w-auto"
-          >
-            Volver
-          </button>
+        <div className="flex flex-col gap-2 border-t bg-white px-5 py-4 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-col gap-2 md:flex-row">
+            <button
+              onClick={onClose}
+              className="w-full rounded-xl border px-4 py-2 text-sm hover:bg-gray-50 md:w-auto"
+            >
+              Volver
+            </button>
+
+            {hasItems ? (
+              <button
+                onClick={() => {
+                  clear();
+                  onClose();
+                }}
+                className="w-full rounded-xl px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 md:w-auto"
+              >
+                Vaciar carrito
+              </button>
+            ) : null}
+          </div>
 
           {hasItems ? (
             <button
               onClick={() => {
                 if (!waUrl) return;
-                window.open(waUrl, "_blank");
+                window.open(waUrl, "_blank", "noopener,noreferrer");
               }}
-              className="w-full rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700 md:w-auto"
+              className="w-full rounded-xl bg-green-600 px-5 py-3 text-sm font-semibold text-white hover:bg-green-700 md:w-auto"
             >
-              Abrir WhatsApp con el pedido
-            </button>
-          ) : null}
-
-          {hasItems ? (
-            <button
-              onClick={() => {
-                clear();
-                onClose();
-              }}
-              className="w-full rounded-lg px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 md:w-auto"
-            >
-              Vaciar carrito
+              Enviar por WhatsApp
             </button>
           ) : null}
         </div>

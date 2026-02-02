@@ -4,7 +4,6 @@
 import { useMemo, useState } from "react";
 import { useCart } from "./CartContext";
 import { imagePublicUrl } from "../lib/images";
-import { buildWhatsAppMessage } from "./wa";
 
 type Product = {
   id: string;
@@ -26,34 +25,15 @@ export default function ProductModal({
   p?: Product | null;
   onClose: () => void;
 }) {
-  // ✅ Hooks SIEMPRE antes de cualquier return condicional
   const { addItem } = useCart();
   const [qty, setQty] = useState<number>(1);
 
-  // ✅ Hook también antes del return (usa optional chaining para no romper)
   const total = useMemo(() => (Number(p?.price) || 0) * qty, [p?.price, qty]);
 
-  // ✅ Ahora sí, return condicional
   if (!p) return null;
 
   const src = imagePublicUrl(p.image_url ?? null);
   const canAdd = p.stock > 0 && qty > 0 && qty <= p.stock;
-
-  const handleBuyNow = () => {
-    if (!canAdd) return;
-
-    const items = [
-      {
-        id: p.id,
-        name: p.name,
-        price: Number(p.price) || 0,
-        qty,
-      },
-    ];
-
-    const url = buildWhatsAppMessage(items, total);
-    window.open(url, "_blank");
-  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
@@ -64,6 +44,7 @@ export default function ProductModal({
           <button
             onClick={onClose}
             className="rounded-full px-3 py-1 text-sm text-gray-600 hover:bg-gray-100"
+            aria-label="Cerrar"
           >
             ✕
           </button>
@@ -142,7 +123,7 @@ export default function ProductModal({
               </span>
             </div>
 
-            {/* Cantidad + Acciones */}
+            {/* Cantidad + Acción */}
             <div className="space-y-2 pt-2">
               <div className="flex items-center gap-3">
                 <input
@@ -162,7 +143,7 @@ export default function ProductModal({
                 />
 
                 <button
-                  onClick={() => canAdd && addItem(p, qty)} // ✅ qty como 2° argumento
+                  onClick={() => canAdd && addItem(p, qty)}
                   disabled={!canAdd}
                   className={`rounded-md px-4 py-2 text-sm font-medium ${
                     canAdd
@@ -174,20 +155,8 @@ export default function ProductModal({
                 </button>
               </div>
 
-              <button
-                onClick={handleBuyNow}
-                disabled={!canAdd}
-                className={`w-full rounded-md px-4 py-2 text-sm font-semibold ${
-                  canAdd
-                    ? "border border-black text-black hover:bg-gray-100"
-                    : "cursor-not-allowed bg-gray-200 text-gray-500"
-                }`}
-              >
-                Comprar ahora por WhatsApp
-              </button>
-
               <p className="text-center text-xs text-gray-500">
-                Te responderemos por WhatsApp para coordinar pago y despacho.
+                Finaliza tu pedido desde el carrito por WhatsApp.
               </p>
             </div>
           </div>

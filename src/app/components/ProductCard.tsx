@@ -3,7 +3,6 @@
 
 import { useCart } from "./CartContext";
 import { imagePublicUrl } from "../lib/images";
-import { buildWhatsAppMessage } from "./wa";
 
 type Product = {
   id: string;
@@ -17,112 +16,87 @@ type Product = {
   barcode?: string | null;
 };
 
-function onlyDigits(s: string) {
-  return (s || "").replace(/\D/g, "");
-}
-
 export default function ProductCard({ p }: { p: Product }) {
   const { addItem } = useCart();
   const src = imagePublicUrl(p.image_url);
-  const phone = onlyDigits(process.env.NEXT_PUBLIC_WHATSAPP_PHONE || "");
-
-  function buyNow() {
-    addItem(p);
-
-    if (!phone) {
-      alert("Configura NEXT_PUBLIC_WHATSAPP_PHONE para enviar por WhatsApp.");
-      return;
-    }
-
-    const price = Number(p.price) || 0;
-
-    // ✅ price siempre number
-    // ✅ NO mandamos id porque WAItem no lo tiene
-    const url = buildWhatsAppMessage([{ name: p.name, price, qty: 1 }], price);
-
-    window.open(url, "_blank", "noopener,noreferrer");
-  }
+  const canAdd = p.stock > 0;
 
   return (
-    <article className="group rounded-2xl border border-gray-200 bg-white p-3 shadow-sm transition hover:-translate-y-[1px] hover:shadow-md focus-within:ring-2 focus-within:ring-gray-300">
+    <article className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition hover:shadow-md">
       {/* Imagen */}
-      <div className="aspect-square w-full overflow-hidden rounded-xl bg-gray-100">
+      <div className="relative aspect-square w-full overflow-hidden bg-gray-100">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={src}
           alt={p.name}
           loading="lazy"
-          className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-[1.03]"
+          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.04]"
         />
-      </div>
 
-      {/* Texto */}
-      <div className="mt-3 space-y-1">
-        {p.brand && (
-          <div className="text-xs font-medium text-gray-500">{p.brand}</div>
-        )}
-
-        <h3 className="line-clamp-2 text-sm font-semibold text-gray-900">
-          {p.name}
-        </h3>
-
-        {p.store && (
-          <div className="text-xs text-gray-500">Tienda: {p.store}</div>
-        )}
-
-        <div className="mt-2 flex items-center justify-between gap-2">
-          <span className="text-base font-semibold text-gray-900">
-            ${Intl.NumberFormat("es-CL").format(Number(p.price) || 0)}
-          </span>
-
+        {/* Badge stock (arriba derecha) */}
+        <div className="absolute right-3 top-3">
           <span
-            className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
+            className={`rounded-full px-2.5 py-1 text-[11px] font-semibold shadow-sm ring-1 ring-black/5 ${
               p.stock > 0
-                ? "bg-emerald-50 text-emerald-700"
-                : "bg-gray-100 text-gray-500"
+                ? "bg-white/95 text-emerald-700"
+                : "bg-white/95 text-gray-500"
             }`}
             title="Existencias"
           >
-            Stock: {p.stock}
+            {p.stock > 0 ? `Stock: ${p.stock}` : "Sin stock"}
           </span>
         </div>
+      </div>
 
-        {/* Acciones */}
-        <div className="mt-3 grid grid-cols-2 gap-2">
+      {/* Contenido */}
+      <div className="p-4">
+        {/* Marca */}
+        {p.brand ? (
+          <div className="text-xs font-medium text-gray-500">{p.brand}</div>
+        ) : (
+          <div className="h-4" />
+        )}
+
+        {/* Nombre */}
+        <h3 className="mt-1 line-clamp-2 text-sm font-semibold text-gray-900">
+          {p.name}
+        </h3>
+
+        {/* Tienda */}
+        {p.store ? (
+          <div className="mt-1 text-xs text-gray-500">Tienda: {p.store}</div>
+        ) : (
+          <div className="h-4" />
+        )}
+
+        {/* Precio + CTA */}
+        <div className="mt-4 flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <div className="text-[11px] font-medium text-gray-500">Precio</div>
+            <div className="truncate text-lg font-semibold text-gray-900">
+              ${Intl.NumberFormat("es-CL").format(Number(p.price) || 0)}
+            </div>
+          </div>
+
           <button
             onClick={(e) => {
               e.stopPropagation();
               addItem(p);
             }}
-            disabled={p.stock <= 0}
-            className={`w-full rounded-lg px-3 py-2 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-              p.stock > 0
-                ? "bg-green-600 text-white hover:bg-green-700 focus:ring-green-600"
+            disabled={!canAdd}
+            className={`shrink-0 rounded-xl px-4 py-2 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+              canAdd
+                ? "bg-gray-900 text-white hover:bg-black focus:ring-gray-900"
                 : "cursor-not-allowed bg-gray-200 text-gray-500"
             }`}
           >
-            {p.stock > 0 ? "Agregar" : "Sin stock"}
-          </button>
-
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              buyNow();
-            }}
-            disabled={p.stock <= 0}
-            className={`w-full rounded-lg px-3 py-2 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-              p.stock > 0
-                ? "bg-emerald-600 text-white hover:bg-emerald-700 focus:ring-emerald-600"
-                : "cursor-not-allowed bg-gray-200 text-gray-500"
-            }`}
-          >
-            Comprar
+            Agregar
           </button>
         </div>
 
-        {/* Mensaje de confianza */}
-        <p className="mt-2 text-center text-xs text-gray-500">
-          Te responderemos por WhatsApp para coordinar pago y despacho.
+        {/* Microcopy (más corto, menos ruido) */}
+        <p className="mt-3 text-center text-xs text-gray-500">
+          Finaliza por WhatsApp desde el carrito.
         </p>
       </div>
     </article>

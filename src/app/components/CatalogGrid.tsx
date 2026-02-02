@@ -23,30 +23,43 @@ export default function CatalogGrid({ products }: { products: Product[] }) {
 
   return (
     <>
-      {/* GRID (solo visual/UX) */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {products.map((p) => (
-          <div
-            key={p.id}
-            className="text-left"
-            onClick={() => setSelected(p)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                setSelected(p);
-              }
-            }}
-            role="button"
-            tabIndex={0}
-            aria-label={`Ver detalles de ${p.name}`}
-          >
-            <ProductCard p={p} />
+      {/* Marco del catálogo (mejor jerarquía + aire) */}
+      <section className="mx-auto max-w-6xl px-4 py-6">
+        <header className="mb-4 flex items-end justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="text-xl font-semibold text-gray-900">
+              Catálogo de productos
+            </h1>
+            <p className="mt-1 text-sm text-gray-600">
+              Agrega al carrito y finaliza tu pedido por WhatsApp.
+            </p>
           </div>
-        ))}
-      </div>
+
+          <div className="shrink-0 text-sm text-gray-500">
+            {products.length} productos
+          </div>
+        </header>
+
+        {/* GRID */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {products.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              className="text-left"
+              onClick={() => setSelected(p)}
+              aria-label={`Ver detalles de ${p.name}`}
+            >
+              <ProductCard p={p} />
+            </button>
+          ))}
+        </div>
+      </section>
 
       {/* MODAL */}
-      {selected && <ProductModal p={selected} onClose={() => setSelected(null)} />}
+      {selected && (
+        <ProductModal p={selected} onClose={() => setSelected(null)} />
+      )}
     </>
   );
 }
