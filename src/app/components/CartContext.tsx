@@ -1,12 +1,17 @@
 "use client";
 
-import { createContext, useContext, useMemo, useState } from "react";
+import { createContext, useContext, useMemo, useRef, useState } from "react";
 
 export type CartItem = {
   id: string;
   name: string;
   price: number | null;
   qty: number;
+};
+
+type CartToast = {
+  open: boolean;
+  text: string;
 };
 
 type CartContextType = {
@@ -16,12 +21,36 @@ type CartContextType = {
   clear: () => void;
   total: number;
   count: number;
+
+  // ✅ Toast simple
+  toast: CartToast;
+  hideToast: () => void;
 };
 
 const CartContext = createContext<CartContextType | null>(null);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
+  const [toast, setToast] = useState<CartToast>({ open: false, text: "" });
+  const toastTimer = useRef<number | null>(null);
+
+  const hideToast = () => {
+    setToast((t) => ({ ...t, open: false }));
+    if (toastTimer.current) {
+      window.clearTimeout(toastTimer.current);
+      toastTimer.current = null;
+    }
+  };
+
+  const showToast = (text: string) => {
+    setToast({ open: true, text });
+
+    if (toastTimer.current) window.clearTimeout(toastTimer.current);
+    toastTimer.current = window.setTimeout(() => {
+      setToast((t) => ({ ...t, open: false }));
+      toastTimer.current = null;
+    }, 1100);
+  };
 
   const addItem: CartContextType["addItem"] = (item, qty = 1) => {
     setItems((prev) => {
@@ -33,6 +62,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       }
       return [...prev, { ...item, qty }];
     });
+
+    // ✅ Feedback: “Agregado ✓”
+    showToast(`Agregado: ${item.name}`);
   };
 
   const removeItem: CartContextType["removeItem"] = (id) =>
@@ -46,7 +78,17 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     return { total: t, count: c };
   }, [items]);
 
-  const value: CartContextType = { items, addItem, removeItem, clear, total, count };
+  const value: CartContextType = {
+    items,
+    addItem,
+    removeItem,
+    clear,
+    total,
+    count,
+    toast,
+    hideToast,
+  };
+
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }
 

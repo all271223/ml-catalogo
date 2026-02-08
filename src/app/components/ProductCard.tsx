@@ -21,6 +21,8 @@ export default function ProductCard({ p }: { p: Product }) {
   const src = imagePublicUrl(p.image_url);
   const canAdd = p.stock > 0;
 
+  const lowStock = p.stock > 0 && p.stock <= 3;
+
   return (
     <article className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition hover:shadow-md">
       {/* Imagen */}
@@ -33,8 +35,9 @@ export default function ProductCard({ p }: { p: Product }) {
           className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.04]"
         />
 
-        {/* Badge stock (arriba derecha) */}
-        <div className="absolute right-3 top-3">
+        {/* Badges (arriba derecha) */}
+        <div className="absolute right-3 top-3 flex flex-col items-end gap-2">
+          {/* Stock badge base */}
           <span
             className={`rounded-full px-2.5 py-1 text-[11px] font-semibold shadow-sm ring-1 ring-black/5 ${
               p.stock > 0
@@ -45,6 +48,13 @@ export default function ProductCard({ p }: { p: Product }) {
           >
             {p.stock > 0 ? `Stock: ${p.stock}` : "Sin stock"}
           </span>
+
+          {/* Low stock badge */}
+          {lowStock ? (
+            <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-semibold text-amber-800 shadow-sm ring-1 ring-black/5">
+              Últimas {p.stock}
+            </span>
+          ) : null}
         </div>
       </div>
 
@@ -94,7 +104,7 @@ export default function ProductCard({ p }: { p: Product }) {
           </button>
         </div>
 
-        {/* Microcopy (más corto, menos ruido) */}
+        {/* Microcopy */}
         <p className="mt-3 text-center text-xs text-gray-500">
           Finaliza por WhatsApp desde el carrito.
         </p>
