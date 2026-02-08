@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { supabasePublic } from "../../lib/supabasePublic";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -25,8 +26,8 @@ export default function LoginPage() {
       if (error) throw error;
 
       router.push("/admin");
-    } catch (error: any) {
-      setError(error.message);
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : 'Error al iniciar sesión');
     } finally {
       setLoading(false);
     }
@@ -82,9 +83,9 @@ export default function LoginPage() {
         </form>
 
         <div className="mt-6 text-center">
-          <a href="/" className="text-blue-600 hover:text-blue-800 text-sm">
+          <Link href="/" className="text-blue-600 hover:text-blue-800 text-sm">
             Volver al catálogo
-          </a>
+          </Link>
         </div>
       </div>
     </div>

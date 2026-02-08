@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { supabasePublic } from "../lib/supabasePublic";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function AdminPage() {
   const [loading, setLoading] = useState(false);
@@ -69,8 +70,8 @@ export default function AdminPage() {
       setMessage("Producto creado exitosamente");
       setFormData({ name: "", brand: "", price: "", stock: "", barcode: "", sku: "", store: "" });
       setImageFile(null);
-    } catch (error: any) {
-      setMessage(`Error: ${error.message}`);
+    } catch (error: unknown) {
+      setMessage(`Error: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     } finally {
       setLoading(false);
     }
@@ -135,7 +136,7 @@ export default function AdminPage() {
           <button type="submit" disabled={loading} className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition">{loading ? "Creando producto..." : "Crear Producto"}</button>
         </form>
         <div className="mt-8 pt-6 border-t border-gray-200">
-          <a href="/" className="text-blue-600 hover:text-blue-800 font-medium">Volver al catálogo</a>
+          <Link href="/" className="text-blue-600 hover:text-blue-800 font-medium">Volver al catálogo</Link>
         </div>
       </div>
     </div>
