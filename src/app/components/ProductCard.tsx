@@ -23,15 +23,15 @@ export default function ProductCard({ p }: { p: Product }) {
 
   return (
     <article className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition hover:shadow-md">
-      {/* Imagen - SIN BADGES */}
+      {/* Imagen - TOTALMENTE LIMPIA, SIN NADA */}
       <div className="relative aspect-square w-full overflow-hidden bg-gray-100">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={src}
           alt={p.name}
           loading="lazy"
           className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.04]"
         />
+        {/* NO HAY NADA AQUÍ - imagen completamente limpia */}
       </div>
 
       {/* Contenido */}
@@ -55,14 +55,14 @@ export default function ProductCard({ p }: { p: Product }) {
           <div className="h-4" />
         )}
 
-        {/* NUEVO: Indicador de stock (Opción 5) */}
+        {/* Indicador de stock DEBAJO de la tienda */}
         {p.stock <= 0 ? (
-          <div className="mt-3 flex items-center gap-2 text-sm font-medium text-gray-500">
+          <div className="mt-2 flex items-center gap-1.5 text-xs font-medium text-gray-500">
             <span>⚫</span>
             <span>Sin stock disponible</span>
           </div>
         ) : p.stock <= 3 ? (
-          <div className="mt-3 flex items-center gap-2 text-sm font-medium text-orange-600">
+          <div className="mt-2 flex items-center gap-1.5 text-xs font-medium text-orange-600">
             <span>⚠️</span>
             <span>
               {p.stock === 1
