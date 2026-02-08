@@ -23,7 +23,7 @@ export default function ProductCard({ p }: { p: Product }) {
 
   return (
     <article className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition hover:shadow-md">
-      {/* Imagen */}
+      {/* Imagen - SIN BADGES */}
       <div className="relative aspect-square w-full overflow-hidden bg-gray-100">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -32,23 +32,6 @@ export default function ProductCard({ p }: { p: Product }) {
           loading="lazy"
           className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.04]"
         />
-
-        {/* Badge único (más pro) */}
-        <div className="absolute bottom-3 left-3">
-          {p.stock <= 0 ? (
-            <span className="rounded-full bg-white/90 px-3 py-1 text-[11px] font-semibold text-gray-600 shadow-sm ring-1 ring-black/5 backdrop-blur">
-              Sin stock
-            </span>
-          ) : p.stock <= 3 ? (
-            <span className="rounded-full bg-amber-100/90 px-3 py-1 text-[11px] font-semibold text-amber-900 shadow-sm ring-1 ring-black/5 backdrop-blur">
-              Últimas {p.stock} unidades
-            </span>
-          ) : (
-            <span className="rounded-full bg-white/90 px-3 py-1 text-[11px] font-semibold text-emerald-700 shadow-sm ring-1 ring-black/5 backdrop-blur">
-              En stock
-            </span>
-          )}
-        </div>
       </div>
 
       {/* Contenido */}
@@ -71,6 +54,23 @@ export default function ProductCard({ p }: { p: Product }) {
         ) : (
           <div className="h-4" />
         )}
+
+        {/* NUEVO: Indicador de stock (Opción 5) */}
+        {p.stock <= 0 ? (
+          <div className="mt-3 flex items-center gap-2 text-sm font-medium text-gray-500">
+            <span>⚫</span>
+            <span>Sin stock disponible</span>
+          </div>
+        ) : p.stock <= 3 ? (
+          <div className="mt-3 flex items-center gap-2 text-sm font-medium text-orange-600">
+            <span>⚠️</span>
+            <span>
+              {p.stock === 1
+                ? "¡Última unidad disponible!"
+                : `Solo quedan ${p.stock} unidades`}
+            </span>
+          </div>
+        ) : null}
 
         {/* Precio + CTA */}
         <div className="mt-4 flex items-center justify-between gap-3">
