@@ -21,8 +21,6 @@ export default function ProductCard({ p }: { p: Product }) {
   const src = imagePublicUrl(p.image_url);
   const canAdd = p.stock > 0;
 
-  const lowStock = p.stock > 0 && p.stock <= 3;
-
   return (
     <article className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition hover:shadow-md">
       {/* Imagen */}
@@ -35,26 +33,21 @@ export default function ProductCard({ p }: { p: Product }) {
           className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.04]"
         />
 
-        {/* Badges (arriba derecha) */}
-        <div className="absolute right-3 top-3 flex flex-col items-end gap-2">
-          {/* Stock badge base */}
-          <span
-            className={`rounded-full px-2.5 py-1 text-[11px] font-semibold shadow-sm ring-1 ring-black/5 ${
-              p.stock > 0
-                ? "bg-white/95 text-emerald-700"
-                : "bg-white/95 text-gray-500"
-            }`}
-            title="Existencias"
-          >
-            {p.stock > 0 ? `Stock: ${p.stock}` : "Sin stock"}
-          </span>
-
-          {/* Low stock badge */}
-          {lowStock ? (
-            <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-semibold text-amber-800 shadow-sm ring-1 ring-black/5">
-              Últimas {p.stock}
+        {/* Badge único (más pro) */}
+        <div className="absolute bottom-3 left-3">
+          {p.stock <= 0 ? (
+            <span className="rounded-full bg-white/90 px-3 py-1 text-[11px] font-semibold text-gray-600 shadow-sm ring-1 ring-black/5 backdrop-blur">
+              Sin stock
             </span>
-          ) : null}
+          ) : p.stock <= 3 ? (
+            <span className="rounded-full bg-amber-100/90 px-3 py-1 text-[11px] font-semibold text-amber-900 shadow-sm ring-1 ring-black/5 backdrop-blur">
+              Últimas {p.stock} unidades
+            </span>
+          ) : (
+            <span className="rounded-full bg-white/90 px-3 py-1 text-[11px] font-semibold text-emerald-700 shadow-sm ring-1 ring-black/5 backdrop-blur">
+              En stock
+            </span>
+          )}
         </div>
       </div>
 
