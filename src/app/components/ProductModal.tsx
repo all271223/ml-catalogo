@@ -144,10 +144,10 @@ export default function ProductModal({
             <div className="bg-white rounded-xl border-2 border-gray-200 p-5">
               {hasDiscount ? (
                 <div>
-                  <div className="text-base text-gray-400 line-through mb-1">
+                  <div className="text-sm text-gray-400 line-through mb-1">
                     ${Intl.NumberFormat("es-CL").format(Number(p.original_price))}
                   </div>
-                  <div className="text-3xl font-bold text-red-600 mb-1">
+                  <div className="text-2xl font-bold text-red-600">
                     ${Intl.NumberFormat("es-CL").format(Number(p.price) || 0)}
                   </div>
                   <div className="text-sm text-green-600 font-semibold">
