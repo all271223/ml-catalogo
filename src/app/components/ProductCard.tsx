@@ -34,16 +34,16 @@ export default function ProductCard({
 
   return (
     <article className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition hover:shadow-md">
-      {/* Imagen - clickable para abrir modal */}
+      {/* Imagen - FONDO BLANCO (limpio) */}
       <div 
-        className="relative aspect-square w-full overflow-hidden bg-gray-100 cursor-pointer"
+        className="relative aspect-square w-full overflow-hidden bg-white cursor-pointer p-4"
         onClick={onOpenModal}
       >
         <img
           src={src}
           alt={p.name}
           loading="lazy"
-          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.04]"
+          className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-[1.04]"
         />
         
         {/* Badge de descuento - VERDE AZULADO (como Mercado Libre) */}
@@ -93,7 +93,7 @@ export default function ProductCard({
         {/* Precio + CTA */}
         <div className="mt-4 flex items-center justify-between gap-3">
           <div className="min-w-0">
-            {/* Precio con descuento - SOBRIO (negro + gris) */}
+            {/* Precio con descuento - SOBRIO */}
             {hasDiscount ? (
               <div>
                 <div className="text-[11px] font-medium text-gray-500">

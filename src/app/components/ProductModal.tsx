@@ -63,8 +63,8 @@ export default function ProductModal({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-6 overflow-hidden flex-1">
           {/* Columna izquierda - Galería + Precio (FIJA) */}
           <div className="flex flex-col gap-4">
-            {/* Imagen principal - ALTURA REDUCIDA A 420px */}
-            <div className="relative rounded-xl bg-gray-50 p-4 flex items-center justify-center" style={{ height: '420px' }}>
+            {/* Imagen principal - FONDO BLANCO (limpio) */}
+            <div className="relative rounded-xl bg-white p-4 flex items-center justify-center border border-gray-200" style={{ height: '420px' }}>
               <img
                 src={images[currentImageIndex]}
                 alt={`${p.name} - Imagen ${currentImageIndex + 1}`}
@@ -141,7 +141,7 @@ export default function ProductModal({
               </div>
             )}
 
-            {/* PRECIO - ABAJO DE LA IMAGEN, FIJO - PALETA SOBRIA */}
+            {/* PRECIO - ABAJO DE LA IMAGEN */}
             <div className="bg-white rounded-xl border-2 border-gray-200 p-5">
               {hasDiscount ? (
                 <div className="space-y-1">
