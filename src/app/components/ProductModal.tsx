@@ -147,7 +147,7 @@ export default function ProductModal({
                   <div className="text-sm text-gray-400 line-through mb-1">
                     ${Intl.NumberFormat("es-CL").format(Number(p.original_price))}
                   </div>
-                  <div className="text-2xl font-bold text-red-600">
+                  <div className="text-xl font-bold text-red-600">
                     ${Intl.NumberFormat("es-CL").format(Number(p.price) || 0)}
                   </div>
                   <div className="text-sm text-green-600 font-semibold">
@@ -157,7 +157,7 @@ export default function ProductModal({
                   </div>
                 </div>
               ) : (
-                <div className="text-3xl font-bold text-gray-900">
+                <div className="text-xl font-bold text-gray-900">
                   ${Intl.NumberFormat("es-CL").format(Number(p.price) || 0)}
                 </div>
               )}
