@@ -63,7 +63,7 @@ export default function ProductModal({
           {/* Columna izquierda - Galería + Precio (FIJA) */}
           <div className="flex flex-col gap-4">
             {/* Imagen principal */}
-            <div className="relative rounded-xl bg-gray-50 p-4 flex items-center justify-center" style={{ height: '500px' }}>
+            <div className="relative rounded-xl bg-gray-50 p-4 flex items-center justify-center" style={{ height: '420px' }}>
               <img
                 src={images[currentImageIndex]}
                 alt={`${p.name} - Imagen ${currentImageIndex + 1}`}
