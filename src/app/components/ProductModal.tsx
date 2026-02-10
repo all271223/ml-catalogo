@@ -40,6 +40,7 @@ export default function ProductModal({
 
   const canAdd = p.stock > 0 && qty > 0 && qty <= p.stock;
   const hasDiscount = p.original_price && p.original_price > (p.price || 0);
+  const savings = hasDiscount ? (p.original_price || 0) - (p.price || 0) : 0;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
@@ -62,7 +63,7 @@ export default function ProductModal({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-6 overflow-hidden flex-1">
           {/* Columna izquierda - Galería + Precio (FIJA) */}
           <div className="flex flex-col gap-4">
-            {/* Imagen principal */}
+            {/* Imagen principal - ALTURA REDUCIDA A 420px */}
             <div className="relative rounded-xl bg-gray-50 p-4 flex items-center justify-center" style={{ height: '420px' }}>
               <img
                 src={images[currentImageIndex]}
@@ -70,10 +71,10 @@ export default function ProductModal({
                 className="max-h-full max-w-full rounded-lg object-contain"
               />
               
-              {/* Badge de descuento */}
+              {/* Badge de descuento - VERDE AZULADO (sobrio) */}
               {hasDiscount && p.discount_percent && (
                 <div className="absolute top-6 right-6">
-                  <span className="inline-flex items-center rounded-full bg-red-600 px-4 py-2 text-sm font-bold text-white shadow-lg">
+                  <span className="inline-flex items-center rounded-full bg-[#2A9D8F] px-4 py-2 text-sm font-bold text-white shadow-lg">
                     -{p.discount_percent}% OFF
                   </span>
                 </div>
@@ -140,25 +141,29 @@ export default function ProductModal({
               </div>
             )}
 
-            {/* PRECIO - ABAJO DE LA IMAGEN, FIJO */}
+            {/* PRECIO - ABAJO DE LA IMAGEN, FIJO - PALETA SOBRIA */}
             <div className="bg-white rounded-xl border-2 border-gray-200 p-5">
               {hasDiscount ? (
-                <div>
-                  <div className="text-sm text-gray-400 line-through mb-1">
-                    ${Intl.NumberFormat("es-CL").format(Number(p.original_price))}
+                <div className="space-y-1">
+                  <div className="text-sm text-gray-500">
+                    Precio original:{" "}
+                    <span className="line-through">
+                      ${Intl.NumberFormat("es-CL").format(Number(p.original_price))}
+                    </span>
                   </div>
-                  <div className="text-xl font-bold text-red-600">
-                    ${Intl.NumberFormat("es-CL").format(Number(p.price) || 0)}
+                  <div className="text-xl font-bold text-gray-900">
+                    Oferta ml-catalogo: ${Intl.NumberFormat("es-CL").format(Number(p.price) || 0)}
                   </div>
-                  <div className="text-sm text-green-600 font-semibold">
-                    Ahorras ${Intl.NumberFormat("es-CL").format(
-                      Number(p.original_price) - Number(p.price)
-                    )}
+                  <div className="text-sm font-semibold text-[#2A9D8F]">
+                    Ahorras ${Intl.NumberFormat("es-CL").format(savings)}
                   </div>
                 </div>
               ) : (
-                <div className="text-xl font-bold text-gray-900">
-                  ${Intl.NumberFormat("es-CL").format(Number(p.price) || 0)}
+                <div>
+                  <div className="text-sm text-gray-500 mb-1">Precio</div>
+                  <div className="text-xl font-bold text-gray-900">
+                    ${Intl.NumberFormat("es-CL").format(Number(p.price) || 0)}
+                  </div>
                 </div>
               )}
             </div>
@@ -221,6 +226,7 @@ export default function ProductModal({
                     />
                   </div>
 
+                  {/* Botón - NEGRO (sobrio, como Mercado Libre) */}
                   <button
                     onClick={() => {
                       if (canAdd) {
@@ -231,7 +237,7 @@ export default function ProductModal({
                     disabled={!canAdd}
                     className={`flex-1 rounded-lg px-6 py-3.5 text-base font-semibold transition-all ${
                       canAdd
-                        ? "bg-green-600 text-white hover:bg-green-700 active:scale-95 shadow-lg hover:shadow-xl"
+                        ? "bg-gray-900 text-white hover:bg-black active:scale-95 shadow-lg hover:shadow-xl"
                         : "cursor-not-allowed bg-gray-300 text-gray-500"
                     }`}
                   >

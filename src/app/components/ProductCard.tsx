@@ -30,6 +30,7 @@ export default function ProductCard({
   const canAdd = p.stock > 0;
   
   const hasDiscount = p.original_price && p.original_price > (p.price || 0);
+  const savings = hasDiscount ? (p.original_price || 0) - (p.price || 0) : 0;
 
   return (
     <article className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition hover:shadow-md">
@@ -45,10 +46,10 @@ export default function ProductCard({
           className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.04]"
         />
         
-        {/* Badge de descuento */}
+        {/* Badge de descuento - VERDE AZULADO (como Mercado Libre) */}
         {hasDiscount && p.discount_percent && (
           <div className="absolute top-3 right-3">
-            <span className="inline-flex items-center rounded-full bg-red-600 px-3 py-1 text-xs font-bold text-white shadow-lg">
+            <span className="inline-flex items-center rounded-full bg-[#2A9D8F] px-3 py-1 text-xs font-bold text-white shadow-lg">
               -{p.discount_percent}% OFF
             </span>
           </div>
@@ -72,21 +73,14 @@ export default function ProductCard({
           {p.name}
         </h3>
 
-        {/* Tienda */}
-        {p.store ? (
-          <div className="mt-1 text-xs text-gray-500">Tienda: {p.store}</div>
-        ) : (
-          <div className="h-4" />
-        )}
-
-        {/* Indicador de stock */}
+        {/* Indicador de stock - NARANJA (solo para alertas) */}
         {p.stock <= 0 ? (
           <div className="mt-2 flex items-center gap-1.5 text-xs font-medium text-gray-500">
             <span>⚫</span>
             <span>Sin stock disponible</span>
           </div>
         ) : p.stock <= 3 ? (
-          <div className="mt-2 flex items-center gap-1.5 text-xs font-medium text-orange-600">
+          <div className="mt-2 flex items-center gap-1.5 text-xs font-medium text-[#F97316]">
             <span>⚠️</span>
             <span>
               {p.stock === 1
@@ -99,14 +93,20 @@ export default function ProductCard({
         {/* Precio + CTA */}
         <div className="mt-4 flex items-center justify-between gap-3">
           <div className="min-w-0">
-            {/* Precio con descuento */}
+            {/* Precio con descuento - SOBRIO (negro + gris) */}
             {hasDiscount ? (
               <div>
-                <div className="text-[11px] font-medium text-gray-400 line-through">
-                  ${Intl.NumberFormat("es-CL").format(Number(p.original_price))}
+                <div className="text-[11px] font-medium text-gray-500">
+                  Precio original:{" "}
+                  <span className="line-through">
+                    ${Intl.NumberFormat("es-CL").format(Number(p.original_price))}
+                  </span>
                 </div>
-                <div className="truncate text-lg font-bold text-red-600">
-                  ${Intl.NumberFormat("es-CL").format(Number(p.price) || 0)}
+                <div className="truncate text-lg font-bold text-gray-900">
+                  Oferta ml-catalogo: ${Intl.NumberFormat("es-CL").format(Number(p.price) || 0)}
+                </div>
+                <div className="text-xs font-medium text-[#2A9D8F]">
+                  Ahorras ${Intl.NumberFormat("es-CL").format(savings)}
                 </div>
               </div>
             ) : (
@@ -119,6 +119,7 @@ export default function ProductCard({
             )}
           </div>
 
+          {/* Botón - NEGRO (sobrio, como Mercado Libre) */}
           <button
             onClick={(e) => {
               e.stopPropagation();
