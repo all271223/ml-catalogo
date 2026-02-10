@@ -9,8 +9,10 @@ type Product = {
   id: string;
   name: string;
   price: number | null;
+  original_price?: number | null;
+  discount_percent?: number | null;
   stock: number;
-  image_url?: string | null; // alias de image_path
+  image_url?: string | string[] | null;
   brand?: string | null;
   store?: string | null;
   description?: string | null;
@@ -43,15 +45,9 @@ export default function CatalogGrid({ products }: { products: Product[] }) {
         {/* GRID */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {products.map((p) => (
-            <button
-              key={p.id}
-              type="button"
-              className="text-left"
-              onClick={() => setSelected(p)}
-              aria-label={`Ver detalles de ${p.name}`}
-            >
-              <ProductCard p={p} />
-            </button>
+            <div key={p.id}>
+              <ProductCard p={p} onOpenModal={() => setSelected(p)} />
+            </div>
           ))}
         </div>
       </section>

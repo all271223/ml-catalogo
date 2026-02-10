@@ -8,30 +8,51 @@ type Product = {
   id: string;
   name: string;
   price: number | null;
+  original_price?: number | null;
+  discount_percent?: number | null;
   stock: number;
-  image_url?: string | null;
+  image_url?: string | string[] | null;
   brand?: string | null;
   store?: string | null;
   sku?: string | null;
   barcode?: string | null;
 };
 
-export default function ProductCard({ p }: { p: Product }) {
+export default function ProductCard({ 
+  p, 
+  onOpenModal 
+}: { 
+  p: Product;
+  onOpenModal?: () => void;
+}) {
   const { addItem } = useCart();
   const src = imagePublicUrl(p.image_url);
   const canAdd = p.stock > 0;
+  
+  const hasDiscount = p.original_price && p.original_price > (p.price || 0);
 
   return (
     <article className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition hover:shadow-md">
-      {/* Imagen - TOTALMENTE LIMPIA, SIN NADA */}
-      <div className="relative aspect-square w-full overflow-hidden bg-gray-100">
+      {/* Imagen - clickable para abrir modal */}
+      <div 
+        className="relative aspect-square w-full overflow-hidden bg-gray-100 cursor-pointer"
+        onClick={onOpenModal}
+      >
         <img
           src={src}
           alt={p.name}
           loading="lazy"
           className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.04]"
         />
-        {/* NO HAY NADA AQUÍ - imagen completamente limpia */}
+        
+        {/* Badge de descuento */}
+        {hasDiscount && p.discount_percent && (
+          <div className="absolute top-3 right-3">
+            <span className="inline-flex items-center rounded-full bg-red-600 px-3 py-1 text-xs font-bold text-white shadow-lg">
+              -{p.discount_percent}% OFF
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Contenido */}
@@ -43,8 +64,11 @@ export default function ProductCard({ p }: { p: Product }) {
           <div className="h-4" />
         )}
 
-        {/* Nombre */}
-        <h3 className="mt-1 line-clamp-2 text-sm font-semibold text-gray-900">
+        {/* Nombre - clickable */}
+        <h3 
+          className="mt-1 line-clamp-2 text-sm font-semibold text-gray-900 cursor-pointer hover:text-blue-600 transition"
+          onClick={onOpenModal}
+        >
           {p.name}
         </h3>
 
@@ -55,7 +79,7 @@ export default function ProductCard({ p }: { p: Product }) {
           <div className="h-4" />
         )}
 
-        {/* Indicador de stock DEBAJO de la tienda */}
+        {/* Indicador de stock */}
         {p.stock <= 0 ? (
           <div className="mt-2 flex items-center gap-1.5 text-xs font-medium text-gray-500">
             <span>⚫</span>
@@ -75,10 +99,24 @@ export default function ProductCard({ p }: { p: Product }) {
         {/* Precio + CTA */}
         <div className="mt-4 flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <div className="text-[11px] font-medium text-gray-500">Precio</div>
-            <div className="truncate text-lg font-semibold text-gray-900">
-              ${Intl.NumberFormat("es-CL").format(Number(p.price) || 0)}
-            </div>
+            {/* Precio con descuento */}
+            {hasDiscount ? (
+              <div>
+                <div className="text-[11px] font-medium text-gray-400 line-through">
+                  ${Intl.NumberFormat("es-CL").format(Number(p.original_price))}
+                </div>
+                <div className="truncate text-lg font-bold text-red-600">
+                  ${Intl.NumberFormat("es-CL").format(Number(p.price) || 0)}
+                </div>
+              </div>
+            ) : (
+              <div>
+                <div className="text-[11px] font-medium text-gray-500">Precio</div>
+                <div className="truncate text-lg font-semibold text-gray-900">
+                  ${Intl.NumberFormat("es-CL").format(Number(p.price) || 0)}
+                </div>
+              </div>
+            )}
           </div>
 
           <button

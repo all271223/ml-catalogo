@@ -8,8 +8,10 @@ export type CatalogProduct = {
   id: string;
   name: string;
   price: number | null;
+  original_price?: number | null;
+  discount_percent?: number | null;
   stock: number;
-  image_url?: string | null; // viene como alias de image_path
+  image_url?: string | string[] | null;
   brand?: string | null;
   store?: string | null;
   description?: string | null;
@@ -34,6 +36,8 @@ export default function ClientCatalog() {
           id,
           name,
           price,
+          original_price,
+          discount_percent,
           stock,
           image_url:image_path,
           brand,
