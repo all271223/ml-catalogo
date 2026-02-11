@@ -23,6 +23,7 @@ export default function AdminPage() {
     store: "",
   });
   const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]); // NUEVO
   const [calculatedPrice, setCalculatedPrice] = useState(0);
 
   useEffect(() => {
@@ -60,11 +61,34 @@ export default function AdminPage() {
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    if (files.length > 6) {
-      setMessage("Máximo 6 imágenes por producto");
+    
+    // NUEVO: Máximo 10 imágenes
+    if (files.length > 10) {
+      setMessage("Máximo 10 imágenes por producto");
       return;
     }
+    
     setImageFiles(files);
+    
+    // NUEVO: Generar previews
+    const previews: string[] = [];
+    files.forEach((file) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        previews.push(reader.result as string);
+        if (previews.length === files.length) {
+          setImagePreviews(previews);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleRemoveImage = (index: number) => {
+    const newFiles = imageFiles.filter((_, i) => i !== index);
+    const newPreviews = imagePreviews.filter((_, i) => i !== index);
+    setImageFiles(newFiles);
+    setImagePreviews(newPreviews);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -119,6 +143,7 @@ export default function AdminPage() {
         store: "",
       });
       setImageFiles([]);
+      setImagePreviews([]); // NUEVO
       const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
       if (fileInput) fileInput.value = "";
     } catch (error: unknown) {
@@ -139,17 +164,29 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-md p-8">
-        <div className="flex justify-between items-center mb-6">
-          <div>
+        {/* HEADER CON BOTÓN */}
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-6">
+          <div className="flex-1">
             <h1 className="text-3xl font-bold mb-2">Panel de Administración</h1>
             <p className="text-gray-600">Crear nuevo producto</p>
           </div>
-          <button
-            onClick={handleLogout}
-            className="px-4 py-2 text-sm text-red-600 hover:text-red-800 font-medium"
-          >
-            Cerrar sesión
-          </button>
+          
+          <div className="flex flex-col sm:flex-row gap-3">
+            <button
+              onClick={() => router.push("/admin/products")}
+              className="px-4 py-2 bg-[#2A9D8F] text-white rounded-lg font-semibold hover:bg-[#238276] transition flex items-center justify-center gap-2"
+            >
+              <span>📋</span>
+              <span>Ver mis productos</span>
+            </button>
+            
+            <button
+              onClick={handleLogout}
+              className="px-4 py-2 text-sm text-red-600 hover:text-red-800 font-medium"
+            >
+              Cerrar sesión
+            </button>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -292,9 +329,10 @@ export default function AdminPage() {
             />
           </div>
 
+          {/* IMÁGENES CON PREVIEW REAL - MÁXIMO 10 */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-4">
-              Imágenes del producto (máximo 6)
+              Imágenes del producto (máximo 10)
             </label>
             
             <input
@@ -305,27 +343,31 @@ export default function AdminPage() {
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
             
-            {imageFiles.length > 0 && (
+            {imagePreviews.length > 0 && (
               <div className="mt-4">
                 <p className="text-sm text-gray-600 mb-3">
-                  {imageFiles.length} imagen(es) seleccionada(s)
+                  {imagePreviews.length} imagen(es) seleccionada(s)
                 </p>
                 
-                <div className="grid grid-cols-6 gap-2">
-                  {imageFiles.map((file, idx) => (
-                    <div key={idx} className="relative aspect-square rounded-lg overflow-hidden border-2 border-blue-500 bg-blue-50">
-                      <div className="absolute inset-0 flex flex-col items-center justify-center p-1">
-                        <div className="text-2xl mb-1">✓</div>
-                        <div className="text-[9px] text-gray-600 text-center truncate w-full px-1">
-                          {idx === 0 ? 'Principal' : `Img ${idx + 1}`}
-                        </div>
+                <div className="grid grid-cols-5 gap-2">
+                  {imagePreviews.map((preview, idx) => (
+                    <div key={idx} className="relative aspect-square rounded-lg overflow-hidden border-2 border-blue-500 bg-gray-50">
+                      {/* PREVIEW REAL DE LA IMAGEN */}
+                      <img
+                        src={preview}
+                        alt={`Preview ${idx + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                      
+                      {/* Label */}
+                      <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[9px] text-center py-0.5">
+                        {idx === 0 ? 'Principal' : `Img ${idx + 1}`}
                       </div>
+                      
+                      {/* Botón X */}
                       <button
                         type="button"
-                        onClick={() => {
-                          const newFiles = imageFiles.filter((_, i) => i !== idx);
-                          setImageFiles(newFiles);
-                        }}
+                        onClick={() => handleRemoveImage(idx)}
                         className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600 z-10"
                       >
                         ✕

@@ -24,26 +24,42 @@ export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    fetchProducts();
+    checkUser();
   }, []);
 
-  async function fetchProducts() {
-    setLoading(true);
-    const { data, error } = await supabasePublic
-      .from("products")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      console.error("Error fetching products:", error);
-      alert("Error al cargar productos");
+  async function checkUser() {
+    const { data: { user } } = await supabasePublic.auth.getUser();
+    if (!user) {
+      router.push("/admin/login");
     } else {
-      setProducts(data || []);
+      setChecking(false);
+      fetchProducts();
     }
-    setLoading(false);
   }
+
+  async function fetchProducts() {
+  setLoading(true);
+  const { data, error } = await supabasePublic
+    .from("products")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  console.log("========== DEBUG ==========");
+  console.log("Productos obtenidos:", data);
+  console.log("Error:", error);
+  console.log("===========================");
+
+  if (error) {
+    console.error("Error fetching products:", error);
+    alert("Error al cargar productos");
+  } else {
+    setProducts(data || []);
+  }
+  setLoading(false);
+}
 
   async function handleDelete(productId: string, productName: string) {
     const confirmed = confirm(
@@ -71,6 +87,17 @@ export default function AdminProductsPage() {
     p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (p.brand && p.brand.toLowerCase().includes(searchTerm.toLowerCase()))
   );
+
+  if (checking) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
+          <p className="text-gray-600">Verificando sesión...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
