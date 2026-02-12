@@ -25,7 +25,16 @@ export default function LoginPage() {
 
       if (error) throw error;
 
-      router.push("/admin");
+      // Redirigir a la página guardada o /admin por defecto
+      const redirectTo = typeof window !== 'undefined' 
+        ? sessionStorage.getItem('redirectAfterLogin') || '/admin'
+        : '/admin';
+      
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('redirectAfterLogin');
+      }
+      
+      router.push(redirectTo);
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : 'Error al iniciar sesión');
     } finally {

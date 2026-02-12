@@ -23,7 +23,7 @@ export default function AdminPage() {
     store: "",
   });
   const [imageFiles, setImageFiles] = useState<File[]>([]);
-  const [imagePreviews, setImagePreviews] = useState<string[]>([]); // NUEVO
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [calculatedPrice, setCalculatedPrice] = useState(0);
 
   useEffect(() => {
@@ -62,7 +62,6 @@ export default function AdminPage() {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     
-    // NUEVO: Máximo 10 imágenes
     if (files.length > 10) {
       setMessage("Máximo 10 imágenes por producto");
       return;
@@ -70,7 +69,7 @@ export default function AdminPage() {
     
     setImageFiles(files);
     
-    // NUEVO: Generar previews
+    // Generar previews
     const previews: string[] = [];
     files.forEach((file) => {
       const reader = new FileReader();
@@ -143,7 +142,7 @@ export default function AdminPage() {
         store: "",
       });
       setImageFiles([]);
-      setImagePreviews([]); // NUEVO
+      setImagePreviews([]);
       const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
       if (fileInput) fileInput.value = "";
     } catch (error: unknown) {
@@ -164,7 +163,7 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-md p-8">
-        {/* HEADER CON BOTÓN */}
+        {/* HEADER CON BOTONES */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-6">
           <div className="flex-1">
             <h1 className="text-3xl font-bold mb-2">Panel de Administración</h1>
@@ -178,6 +177,14 @@ export default function AdminPage() {
             >
               <span>📋</span>
               <span>Ver mis productos</span>
+            </button>
+
+            <button
+              onClick={() => router.push("/scan")}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition flex items-center justify-center gap-2"
+            >
+              <span>📱</span>
+              <span>Escáner de stock</span>
             </button>
             
             <button
@@ -352,19 +359,16 @@ export default function AdminPage() {
                 <div className="grid grid-cols-5 gap-2">
                   {imagePreviews.map((preview, idx) => (
                     <div key={idx} className="relative aspect-square rounded-lg overflow-hidden border-2 border-blue-500 bg-gray-50">
-                      {/* PREVIEW REAL DE LA IMAGEN */}
                       <img
                         src={preview}
                         alt={`Preview ${idx + 1}`}
                         className="w-full h-full object-cover"
                       />
                       
-                      {/* Label */}
                       <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[9px] text-center py-0.5">
                         {idx === 0 ? 'Principal' : `Img ${idx + 1}`}
                       </div>
                       
-                      {/* Botón X */}
                       <button
                         type="button"
                         onClick={() => handleRemoveImage(idx)}
