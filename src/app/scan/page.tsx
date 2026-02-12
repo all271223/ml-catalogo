@@ -1,9 +1,18 @@
 // src/app/scan/page.tsx
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { supabasePublic } from "../lib/supabasePublic";
+
+type Product = {
+  id: string;
+  name: string;
+  stock: number;
+  barcode: string | null;
+  brand: string | null;
+  price: number;
+};
 
 type Movement = {
   id: string;
@@ -19,13 +28,25 @@ export default function ScanPage() {
   const [isAutoMode, setIsAutoMode] = useState(true);
   const [barcode, setBarcode] = useState("");
   const [message, setMessage] = useState("");
-  const [currentProduct, setCurrentProduct] = useState<any>(null);
+  const [currentProduct, setCurrentProduct] = useState<Product | null>(null);
   const [movements, setMovements] = useState<Movement[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const checkUser = useCallback(async () => {
+    const { data: { user } } = await supabasePublic.auth.getUser();
+    if (!user) {
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('redirectAfterLogin', '/scan');
+      }
+      router.push("/admin/login");
+    } else {
+      setChecking(false);
+    }
+  }, [router]);
+
   useEffect(() => {
     checkUser();
-  }, []);
+  }, [checkUser]);
 
   useEffect(() => {
     // Auto-focus en el input para que el escáner funcione
@@ -33,19 +54,6 @@ export default function ScanPage() {
       inputRef.current.focus();
     }
   }, [checking, currentProduct]);
-
-async function checkUser() {
-  const { data: { user } } = await supabasePublic.auth.getUser();
-  if (!user) {
-    // Guardar la URL para redirigir después del login
-    if (typeof window !== 'undefined') {
-      sessionStorage.setItem('redirectAfterLogin', '/scan');
-    }
-    router.push("/admin/login");
-  } else {
-    setChecking(false);
-  }
-}
 
   async function handleScan(e: React.FormEvent) {
     e.preventDefault();
@@ -67,11 +75,11 @@ async function checkUser() {
       return;
     }
 
-    setCurrentProduct(product);
+    setCurrentProduct(product as Product);
 
     // Si es modo automático, registrar +1 inmediatamente
     if (isAutoMode) {
-      await updateStock(product, 1);
+      await updateStock(product as Product, 1);
     }
 
     // Limpiar input solo en modo automático
@@ -80,7 +88,7 @@ async function checkUser() {
     }
   }
 
-  async function updateStock(product: any, change: number) {
+  async function updateStock(product: Product, change: number) {
     const newStock = product.stock + change;
 
     if (newStock < 0) {
