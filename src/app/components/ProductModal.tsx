@@ -1,7 +1,7 @@
 // src/app/components/ProductModal.tsx
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useCart } from "./CartContext";
 import { imagePublicUrls } from "../lib/images";
 
@@ -31,6 +31,14 @@ export default function ProductModal({
   const [qty, setQty] = useState<number>(1);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
+
+// NUEVO - Bloquear scroll cuando modal abierto
+useEffect(() => {
+  document.body.style.overflow = 'hidden';
+  return () => {
+    document.body.style.overflow = 'unset';
+  };
+}, []);
 
   const images = useMemo(() => {
     if (!p) return [];
@@ -67,7 +75,7 @@ export default function ProductModal({
           {/* Columna izquierda - Galería + Precio */}
           <div className="flex flex-col gap-3 sm:gap-4">
             {/* Imagen principal - OPTIMIZADA MÓVIL */}
-            <div className="relative rounded-xl bg-white flex items-center justify-center" style={{ minHeight: '280px', maxHeight: '500px' }}>
+            <div className="relative rounded-xl bg-white flex items-center justify-center" style={{ height: '400px' }}>
               <img
                 src={images[currentImageIndex]}
                 alt={`${p.name} - Imagen ${currentImageIndex + 1}`}
