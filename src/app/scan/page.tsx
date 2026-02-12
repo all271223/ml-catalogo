@@ -1,6 +1,6 @@
 // src/app/scan/page.tsx
 "use client";
-
+// Force rebuild - v2
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { supabasePublic } from "../lib/supabasePublic";
