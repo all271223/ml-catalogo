@@ -336,7 +336,7 @@ export default function AdminPage() {
             />
           </div>
 
-          {/* IMÁGENES CON PREVIEW REAL - MÁXIMO 10 */}
+          {/* IMÁGENES CON PREVIEW REAL - MÁXIMO 10 - CON DRAG & DROP */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-4">
               Imágenes del producto (máximo 10)
@@ -354,19 +354,52 @@ export default function AdminPage() {
               <div className="mt-4">
                 <p className="text-sm text-gray-600 mb-3">
                   {imagePreviews.length} imagen(es) seleccionada(s)
+                  <span className="ml-2 text-xs text-blue-600">
+                    💡 Arrastra para reordenar (la primera es la principal)
+                  </span>
                 </p>
                 
                 <div className="grid grid-cols-5 gap-2">
                   {imagePreviews.map((preview, idx) => (
-                    <div key={idx} className="relative aspect-square rounded-lg overflow-hidden border-2 border-blue-500 bg-gray-50">
+                    <div
+                      key={idx}
+                      draggable
+                      onDragStart={(e) => {
+                        e.dataTransfer.effectAllowed = "move";
+                        e.dataTransfer.setData("text/html", idx.toString());
+                      }}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = "move";
+                      }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        const draggedIdx = parseInt(e.dataTransfer.getData("text/html"));
+                        if (draggedIdx === idx) return;
+                        
+                        // Reordenar arrays
+                        const newPreviews = [...imagePreviews];
+                        const newFiles = [...imageFiles];
+                        
+                        const [draggedPreview] = newPreviews.splice(draggedIdx, 1);
+                        const [draggedFile] = newFiles.splice(draggedIdx, 1);
+                        
+                        newPreviews.splice(idx, 0, draggedPreview);
+                        newFiles.splice(idx, 0, draggedFile);
+                        
+                        setImagePreviews(newPreviews);
+                        setImageFiles(newFiles);
+                      }}
+                      className="relative aspect-square rounded-lg overflow-hidden border-2 border-blue-500 bg-gray-50 cursor-move hover:border-blue-600 hover:shadow-lg transition"
+                    >
                       <img
                         src={preview}
                         alt={`Preview ${idx + 1}`}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover pointer-events-none"
                       />
                       
-                      <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[9px] text-center py-0.5">
-                        {idx === 0 ? 'Principal' : `Img ${idx + 1}`}
+                      <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[9px] text-center py-0.5 pointer-events-none">
+                        {idx === 0 ? '📌 Principal' : `Img ${idx + 1}`}
                       </div>
                       
                       <button

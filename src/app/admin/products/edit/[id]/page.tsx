@@ -1,7 +1,7 @@
 // src/app/admin/products/edit/[id]/page.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { supabasePublic } from "../../../../lib/supabasePublic";
 import { imagePublicUrl } from "../../../../lib/images";
@@ -22,6 +22,13 @@ type Product = {
   is_visible: boolean;
 };
 
+function arrayMove<T>(arr: T[], from: number, to: number) {
+  const copy = [...arr];
+  const [item] = copy.splice(from, 1);
+  copy.splice(to, 0, item);
+  return copy;
+}
+
 export default function EditProductPage() {
   const router = useRouter();
   const params = useParams();
@@ -33,14 +40,19 @@ export default function EditProductPage() {
   const [message, setMessage] = useState("");
   const [product, setProduct] = useState<Product | null>(null);
 
-  // Imágenes actuales (URLs de Supabase)
+  // Imágenes actuales (paths en Supabase Storage)
   const [currentImages, setCurrentImages] = useState<string[]>([]);
   // Imágenes marcadas para eliminar
   const [imagesToDelete, setImagesToDelete] = useState<string[]>([]);
+
   // Nuevas imágenes a subir
   const [newImageFiles, setNewImageFiles] = useState<File[]>([]);
-  // Previews de nuevas imágenes
+  // Previews de nuevas imágenes (mismo orden que newImageFiles)
   const [newImagePreviews, setNewImagePreviews] = useState<string[]>([]);
+
+  // Highlight visual en drop
+  const [droppedKey, setDroppedKey] = useState<string | null>(null);
+  const dropTimerRef = useRef<number | null>(null);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -60,13 +72,13 @@ export default function EditProductPage() {
   // Verificar sesión
   useEffect(() => {
     checkUser();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Cargar producto
   useEffect(() => {
-    if (!checking) {
-      loadProduct();
-    }
+    if (!checking) loadProduct();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [checking]);
 
   // Calcular precio
@@ -75,7 +87,7 @@ export default function EditProductPage() {
     const discount = parseFloat(formData.discount_percent);
 
     if (original > 0 && discount >= 0 && discount <= 100) {
-      const salePrice = original - (original * (discount / 100));
+      const salePrice = original - original * (discount / 100);
       setCalculatedPrice(Math.round(salePrice));
     } else if (original > 0 && !discount) {
       setCalculatedPrice(original);
@@ -84,17 +96,27 @@ export default function EditProductPage() {
     }
   }, [formData.original_price, formData.discount_percent]);
 
+  function flashDrop(key: string) {
+    setDroppedKey(key);
+    if (dropTimerRef.current) window.clearTimeout(dropTimerRef.current);
+    dropTimerRef.current = window.setTimeout(() => {
+      setDroppedKey(null);
+      dropTimerRef.current = null;
+    }, 350);
+  }
+
   async function checkUser() {
-    const { data: { user } } = await supabasePublic.auth.getUser();
-    if (!user) {
-      router.push("/admin/login");
-    } else {
-      setChecking(false);
-    }
+    const {
+      data: { user },
+    } = await supabasePublic.auth.getUser();
+
+    if (!user) router.push("/admin/login");
+    else setChecking(false);
   }
 
   async function loadProduct() {
     setLoading(true);
+
     const { data, error } = await supabasePublic
       .from("products")
       .select("*")
@@ -123,7 +145,6 @@ export default function EditProductPage() {
         is_visible: data.is_visible ?? true,
       });
 
-      // Cargar imágenes actuales
       if (data.image_path) {
         const images = Array.isArray(data.image_path)
           ? data.image_path
@@ -136,43 +157,89 @@ export default function EditProductPage() {
   }
 
   function handleRemoveCurrentImage(imagePath: string) {
-    setImagesToDelete([...imagesToDelete, imagePath]);
-    setCurrentImages(currentImages.filter((img) => img !== imagePath));
+    setImagesToDelete((prev) => [...prev, imagePath]);
+    setCurrentImages((prev) => prev.filter((img) => img !== imagePath));
   }
 
   function handleNewImageChange(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files || []);
-    const totalImages =
-      currentImages.length - imagesToDelete.length + newImageFiles.length + files.length;
 
-    // CAMBIO: Máximo 10 imágenes
-    if (totalImages > 10) {
+    const total = currentImages.length + newImageFiles.length + files.length;
+    if (total > 10) {
       setMessage("Máximo 10 imágenes por producto");
       return;
     }
 
     const updatedFiles = [...newImageFiles, ...files];
     setNewImageFiles(updatedFiles);
-    
-    // Generar previews
-    const previews: string[] = [...newImagePreviews];
+
+    // previews en el MISMO orden
+    const nextPreviews = [...newImagePreviews];
+
     files.forEach((file) => {
       const reader = new FileReader();
       reader.onloadend = () => {
-        previews.push(reader.result as string);
-        if (previews.length === updatedFiles.length) {
-          setNewImagePreviews(previews);
+        nextPreviews.push(reader.result as string);
+
+        // cuando ya se agregaron todos los nuevos previews
+        if (nextPreviews.length === updatedFiles.length) {
+          setNewImagePreviews(nextPreviews);
         }
       };
       reader.readAsDataURL(file);
     });
-    
+
     setMessage("");
   }
 
   function handleRemoveNewImage(index: number) {
-    setNewImageFiles(newImageFiles.filter((_, i) => i !== index));
-    setNewImagePreviews(newImagePreviews.filter((_, i) => i !== index));
+    setNewImageFiles((prev) => prev.filter((_, i) => i !== index));
+    setNewImagePreviews((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  // Drag & drop: CURRENT IMAGES
+  function onDragStartCurrent(e: React.DragEvent, idx: number) {
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData(
+      "application/x-dnd",
+      JSON.stringify({ type: "current", idx })
+    );
+  }
+
+  function onDropCurrent(e: React.DragEvent, dropIdx: number) {
+    e.preventDefault();
+    const raw = e.dataTransfer.getData("application/x-dnd");
+    if (!raw) return;
+
+    const payload = JSON.parse(raw) as { type: "current" | "new"; idx: number };
+    if (payload.type !== "current") return;
+    if (payload.idx === dropIdx) return;
+
+    setCurrentImages((prev) => arrayMove(prev, payload.idx, dropIdx));
+    flashDrop(`current-${dropIdx}`);
+  }
+
+  // Drag & drop: NEW IMAGES (previews + files juntos)
+  function onDragStartNew(e: React.DragEvent, idx: number) {
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData(
+      "application/x-dnd",
+      JSON.stringify({ type: "new", idx })
+    );
+  }
+
+  function onDropNew(e: React.DragEvent, dropIdx: number) {
+    e.preventDefault();
+    const raw = e.dataTransfer.getData("application/x-dnd");
+    if (!raw) return;
+
+    const payload = JSON.parse(raw) as { type: "current" | "new"; idx: number };
+    if (payload.type !== "new") return;
+    if (payload.idx === dropIdx) return;
+
+    setNewImageFiles((prev) => arrayMove(prev, payload.idx, dropIdx));
+    setNewImagePreviews((prev) => arrayMove(prev, payload.idx, dropIdx));
+    flashDrop(`new-${dropIdx}`);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -181,12 +248,12 @@ export default function EditProductPage() {
     setMessage("");
 
     try {
-      // 1. Eliminar imágenes marcadas del Storage
+      // 1) Eliminar imágenes marcadas del Storage
       for (const imagePath of imagesToDelete) {
         await supabasePublic.storage.from("product-images").remove([imagePath]);
       }
 
-      // 2. Subir nuevas imágenes
+      // 2) Subir nuevas imágenes (en el orden de newImageFiles)
       const newImagePaths: string[] = [];
       for (const file of newImageFiles) {
         const fileExt = file.name.split(".").pop();
@@ -202,10 +269,10 @@ export default function EditProductPage() {
         newImagePaths.push(fileName);
       }
 
-      // 3. Construir array final de imágenes
+      // 3) Final: current (ordenado) + new (ordenado)
       const finalImages = [...currentImages, ...newImagePaths];
 
-      // 4. Actualizar producto
+      // 4) Update producto
       const discountValue = formData.discount_percent
         ? parseFloat(formData.discount_percent)
         : null;
@@ -233,9 +300,7 @@ export default function EditProductPage() {
       if (error) throw error;
 
       setMessage("Producto actualizado exitosamente");
-      setTimeout(() => {
-        router.push("/admin/products");
-      }, 1500);
+      setTimeout(() => router.push("/admin/products"), 1500);
     } catch (error: unknown) {
       setMessage(
         `Error: ${error instanceof Error ? error.message : "Error desconocido"}`
@@ -435,9 +500,7 @@ export default function EditProductPage() {
             <input
               type="text"
               value={formData.sku}
-              onChange={(e) =>
-                setFormData({ ...formData, sku: e.target.value })
-              }
+              onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
@@ -457,29 +520,47 @@ export default function EditProductPage() {
             />
           </div>
 
-          {/* SISTEMA DE IMÁGENES - MÁXIMO 10 */}
+          {/* SISTEMA DE IMÁGENES - MÁXIMO 10 - DRAG & DROP */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-4">
               Imágenes del producto ({totalImages}/10)
             </label>
 
-            {/* Imágenes actuales */}
+            {/* Current images */}
             {currentImages.length > 0 && (
               <div className="mb-4">
-                <p className="text-sm text-gray-600 mb-3">Imágenes actuales:</p>
+                <p className="text-sm text-gray-600 mb-3">
+                  Imágenes actuales:
+                  <span className="ml-2 text-xs text-blue-600">
+                    💡 Arrastra para reordenar
+                  </span>
+                </p>
+
                 <div className="grid grid-cols-5 gap-2">
                   {currentImages.map((imagePath, idx) => (
                     <div
                       key={imagePath}
-                      className="relative aspect-square rounded-lg overflow-hidden border-2 border-gray-300"
+                      draggable
+                      onDragStart={(e) => onDragStartCurrent(e, idx)}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = "move";
+                      }}
+                      onDrop={(e) => onDropCurrent(e, idx)}
+                      className={[
+                        "relative aspect-square rounded-lg overflow-hidden border-2 cursor-move transition",
+                        droppedKey === `current-${idx}`
+                          ? "border-blue-500 ring-4 ring-blue-200"
+                          : "border-gray-300 hover:border-blue-500 hover:shadow-lg",
+                      ].join(" ")}
                     >
                       <img
                         src={imagePublicUrl(imagePath)}
                         alt={`Imagen ${idx + 1}`}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover pointer-events-none"
                       />
-                      <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[9px] text-center py-0.5">
-                        {idx === 0 ? "Principal" : `Img ${idx + 1}`}
+                      <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[9px] text-center py-0.5 pointer-events-none">
+                        {idx === 0 ? "📌 Principal" : `Img ${idx + 1}`}
                       </div>
                       <button
                         type="button"
@@ -494,24 +575,40 @@ export default function EditProductPage() {
               </div>
             )}
 
-            {/* Nuevas imágenes con PREVIEW REAL */}
+            {/* New images */}
             {newImagePreviews.length > 0 && (
               <div className="mb-4">
                 <p className="text-sm text-gray-600 mb-3">
                   Nuevas imágenes ({newImagePreviews.length}):
+                  <span className="ml-2 text-xs text-green-600">
+                    💡 También puedes arrastrar para ordenar
+                  </span>
                 </p>
+
                 <div className="grid grid-cols-5 gap-2">
                   {newImagePreviews.map((preview, idx) => (
                     <div
                       key={idx}
-                      className="relative aspect-square rounded-lg overflow-hidden border-2 border-green-500"
+                      draggable
+                      onDragStart={(e) => onDragStartNew(e, idx)}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = "move";
+                      }}
+                      onDrop={(e) => onDropNew(e, idx)}
+                      className={[
+                        "relative aspect-square rounded-lg overflow-hidden border-2 cursor-move transition",
+                        droppedKey === `new-${idx}`
+                          ? "border-green-600 ring-4 ring-green-200"
+                          : "border-green-500 hover:shadow-lg",
+                      ].join(" ")}
                     >
                       <img
                         src={preview}
                         alt={`Nueva ${idx + 1}`}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover pointer-events-none"
                       />
-                      <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[9px] text-center py-0.5">
+                      <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[9px] text-center py-0.5 pointer-events-none">
                         Nueva {idx + 1}
                       </div>
                       <button
@@ -527,7 +624,7 @@ export default function EditProductPage() {
               </div>
             )}
 
-            {/* Input para agregar más imágenes */}
+            {/* Input */}
             {totalImages < 10 && (
               <div>
                 <input
