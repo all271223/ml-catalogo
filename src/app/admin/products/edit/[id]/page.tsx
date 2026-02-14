@@ -82,19 +82,23 @@ export default function EditProductPage() {
   }, [checking]);
 
   // Calcular precio
-  useEffect(() => {
-    const original = parseFloat(formData.original_price);
-    const discount = parseFloat(formData.discount_percent);
+ useEffect(() => {
+  const original = parseFloat(formData.original_price);
+  const discount = parseFloat(formData.discount_percent);
 
-    if (original > 0 && discount >= 0 && discount <= 100) {
-      const salePrice = original - original * (discount / 100);
-      setCalculatedPrice(Math.round(salePrice));
-    } else if (original > 0 && !discount) {
-      setCalculatedPrice(original);
-    } else {
-      setCalculatedPrice(0);
-    }
-  }, [formData.original_price, formData.discount_percent]);
+  if (original > 0 && discount >= 0 && discount <= 100) {
+    const salePrice = original - original * (discount / 100);
+    // Redondear al millar más cercano (mínimo $1.000)
+    const rounded = Math.max(1000, Math.round(salePrice / 1000) * 1000);
+    setCalculatedPrice(rounded);
+  } else if (original > 0 && !discount) {
+    // Si no hay descuento, también redondear (mínimo $1.000)
+    const rounded = Math.max(1000, Math.round(original / 1000) * 1000);
+    setCalculatedPrice(rounded);
+  } else {
+    setCalculatedPrice(0);
+  }
+}, [formData.original_price, formData.discount_percent]);
 
   function flashDrop(key: string) {
     setDroppedKey(key);
