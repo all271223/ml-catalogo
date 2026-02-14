@@ -11,14 +11,13 @@ export default function CartCheckoutModal({
   open: boolean;
   onClose: () => void;
 }) {
-  const { items, total, clear } = useCart();
+  const { items, total, clear, removeItem } = useCart();
   const hasItems = items.length > 0;
 
   const waUrl = useMemo(() => {
     if (!hasItems) return "";
     return buildWhatsAppMessage(
       items.map((i) => ({
-        // ⚠️ si tu WAItem no tiene id, puedes borrar esta línea sin problema
         id: i.id,
         name: i.name,
         price: Number(i.price) || 0,
@@ -105,6 +104,18 @@ export default function CartCheckoutModal({
                           {" "}c/u
                         </div>
                       </div>
+
+                      {/* Botón eliminar */}
+                      <button
+                        onClick={() => removeItem(it.id)}
+                        className="shrink-0 rounded-full p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 transition"
+                        aria-label="Eliminar producto"
+                        title="Eliminar"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
                     </li>
                   ))}
                 </ul>

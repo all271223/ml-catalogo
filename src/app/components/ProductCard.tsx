@@ -102,9 +102,9 @@ export default function ProductCard({
                     ${Intl.NumberFormat("es-CL").format(Number(p.original_price))}
                   </span>
                 </div>
-                <div className="truncate text-lg font-bold text-gray-900">
-                  Oferta ml-catalogo: ${Intl.NumberFormat("es-CL").format(Number(p.price) || 0)}
-                </div>
+                <div className="text-base sm:text-lg font-bold text-gray-900 break-words">
+  Oferta ml-catalogo: ${Intl.NumberFormat("es-CL").format(Number(p.price) || 0)}
+</div>
                 <div className="text-xs font-medium text-[#2A9D8F]">
                   Ahorras ${Intl.NumberFormat("es-CL").format(savings)}
                 </div>
