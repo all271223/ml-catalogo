@@ -46,11 +46,11 @@ export default function ProductCard({
           className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
         />
         
-        {/* Badge OPTIMIZADO con urgencia */}
+        {/* Badge discreto - presente pero no protagonista */}
         {hasDiscount && p.discount_percent && (
           <div className="absolute top-3 right-3">
-            <span className="inline-flex items-center gap-1 rounded-lg bg-gradient-to-r from-red-500 to-orange-500 px-3 py-1.5 text-xs font-bold text-white shadow-lg">
-              🔥 -{p.discount_percent}% HOY
+            <span className="inline-flex items-center rounded-md bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700">
+              -{p.discount_percent}% OFF
             </span>
           </div>
         )}
@@ -71,59 +71,59 @@ export default function ProductCard({
           {p.name}
         </h3>
 
-        {/* Stock bajo - OPTIMIZADO con urgencia */}
+        {/* Stock bajo - SOLO si ≤ 3 */}
         {p.stock <= 0 ? (
-          <div className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 bg-gray-100 rounded-md px-2 py-1">
+          <div className="flex items-center gap-1.5 text-xs font-medium text-gray-500 bg-gray-100 rounded-md px-2 py-1">
             <span>⚫</span>
             <span>Agotado</span>
           </div>
         ) : p.stock <= 3 ? (
-          <div className="flex items-center gap-1.5 text-xs font-bold text-white bg-gradient-to-r from-red-600 to-orange-600 rounded-md px-2 py-1.5 animate-pulse">
+          <div className="flex items-center gap-1.5 text-xs font-medium text-orange-700 bg-orange-50 rounded-md px-2 py-1">
             <span>⚠️</span>
             <span>
               {p.stock === 1
-                ? "¡ÚLTIMA UNIDAD!"
-                : `¡SOLO QUEDAN ${p.stock}!`}
+                ? "Última unidad disponible"
+                : `Quedan ${p.stock} unidades`}
             </span>
           </div>
         ) : null}
 
-        {/* PRECIO HÉROE - Optimizado */}
+        {/* PRECIO ELEGANTE - Jerarquía clara */}
         <div className="space-y-1">
           {hasDiscount ? (
             <>
-              {/* Precio final - HÉROE */}
-              <div className="text-3xl font-black text-gray-900">
+              {/* Precio final - protagonista pero elegante */}
+              <div className="text-[26px] font-semibold text-gray-900">
                 ${Intl.NumberFormat("es-CL").format(Number(p.price) || 0)}
               </div>
               
-              {/* Precio original - secundario */}
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-500 line-through">
+              {/* Precio original + ahorro - secundarios */}
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-gray-400 line-through">
                   ${Intl.NumberFormat("es-CL").format(Number(p.original_price))}
                 </span>
-                <span className="text-sm font-bold text-green-600">
+                <span className="text-emerald-600 font-medium">
                   Ahorras ${Intl.NumberFormat("es-CL").format(savings)}
                 </span>
               </div>
             </>
           ) : (
-            <div className="text-3xl font-black text-gray-900">
+            <div className="text-[26px] font-semibold text-gray-900">
               ${Intl.NumberFormat("es-CL").format(Number(p.price) || 0)}
             </div>
           )}
         </div>
 
-        {/* CTA - FULL WIDTH + dominante */}
+        {/* CTA - Full width pero no exagerado */}
         <button
           onClick={(e) => {
             e.stopPropagation();
             addItem(p);
           }}
           disabled={!canAdd}
-          className={`w-full rounded-xl px-6 py-4 text-base font-bold transition-all duration-200 ${
+          className={`w-full rounded-xl px-6 py-2.5 text-sm font-medium transition-all duration-200 ${
             canAdd
-              ? "bg-black text-white hover:bg-gray-800 active:scale-[0.98] shadow-lg hover:shadow-xl"
+              ? "bg-gray-900 text-white hover:bg-black shadow-sm hover:shadow-md"
               : "cursor-not-allowed bg-gray-200 text-gray-500"
           }`}
         >

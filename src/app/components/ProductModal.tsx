@@ -32,13 +32,13 @@ export default function ProductModal({
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
 
-// NUEVO - Bloquear scroll cuando modal abierto
-useEffect(() => {
-  document.body.style.overflow = 'hidden';
-  return () => {
-    document.body.style.overflow = 'unset';
-  };
-}, []);
+  // Bloquear scroll cuando modal abierto
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, []);
 
   const images = useMemo(() => {
     if (!p) return [];
@@ -74,7 +74,7 @@ useEffect(() => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8 p-4 sm:p-6 overflow-y-auto flex-1">
           {/* Columna izquierda - Galería + Precio */}
           <div className="flex flex-col gap-3 sm:gap-4">
-            {/* Imagen principal - OPTIMIZADA MÓVIL */}
+            {/* Imagen principal */}
             <div className="relative rounded-xl bg-white flex items-center justify-center" style={{ height: '400px' }}>
               <img
                 src={images[currentImageIndex]}
@@ -84,10 +84,10 @@ useEffect(() => {
                 onClick={() => setZoomedImage(images[currentImageIndex])}
               />
               
-              {/* Badge de descuento */}
+              {/* Badge discreto */}
               {hasDiscount && p.discount_percent && (
                 <div className="absolute top-3 right-3">
-                  <span className="inline-flex items-center rounded-full bg-[#2A9D8F] px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-bold text-white shadow-lg">
+                  <span className="inline-flex items-center rounded-md bg-gray-100 px-2.5 sm:px-3 py-1 sm:py-1.5 text-xs font-medium text-gray-700">
                     -{p.discount_percent}% OFF
                   </span>
                 </div>
@@ -154,29 +154,28 @@ useEffect(() => {
               </div>
             )}
 
-            {/* PRECIO */}
+            {/* PRECIO ELEGANTE */}
             <div className="bg-white rounded-xl border-2 border-gray-200 p-4 sm:p-5">
               {hasDiscount ? (
-                <div className="space-y-1">
-                  <div className="text-xs sm:text-sm text-gray-500">
-                    Precio original:{" "}
-                    <span className="line-through">
+                <div className="space-y-1.5">
+                  {/* Precio final - protagonista */}
+                  <div className="text-[28px] sm:text-[32px] font-semibold text-gray-900">
+                    ${Intl.NumberFormat("es-CL").format(Number(p.price) || 0)}
+                  </div>
+                  
+                  {/* Precio original + ahorro - secundarios */}
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="text-gray-400 line-through">
                       ${Intl.NumberFormat("es-CL").format(Number(p.original_price))}
                     </span>
-                  </div>
-                  <div className="text-lg sm:text-xl font-bold text-gray-900">
-                    Oferta ml-catalogo: ${Intl.NumberFormat("es-CL").format(Number(p.price) || 0)}
-                  </div>
-                  <div className="text-xs sm:text-sm font-semibold text-[#2A9D8F]">
-                    Ahorras ${Intl.NumberFormat("es-CL").format(savings)}
+                    <span className="text-emerald-600 font-medium">
+                      Ahorras ${Intl.NumberFormat("es-CL").format(savings)}
+                    </span>
                   </div>
                 </div>
               ) : (
-                <div>
-                  <div className="text-xs sm:text-sm text-gray-500 mb-1">Precio</div>
-                  <div className="text-lg sm:text-xl font-bold text-gray-900">
-                    ${Intl.NumberFormat("es-CL").format(Number(p.price) || 0)}
-                  </div>
+                <div className="text-[28px] sm:text-[32px] font-semibold text-gray-900">
+                  ${Intl.NumberFormat("es-CL").format(Number(p.price) || 0)}
                 </div>
               )}
             </div>
@@ -184,22 +183,20 @@ useEffect(() => {
 
           {/* Columna derecha - Info */}
           <div className="flex flex-col gap-4">
-            {/* Marca y Stock */}
+            {/* Marca y Stock (SOLO SI ≤ 3) */}
             <div className="flex items-center justify-between pb-3 sm:pb-4 border-b border-gray-200">
               {p.brand && (
                 <div className="text-sm sm:text-base font-semibold text-gray-700">
                   Marca: {p.brand}
                 </div>
               )}
-              <span
-                className={`rounded-full px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold ${
-                  p.stock > 0
-                    ? "bg-emerald-100 text-emerald-700"
-                    : "bg-gray-100 text-gray-500"
-                }`}
-              >
-                Stock: {p.stock}
-              </span>
+              
+              {/* Stock SOLO si ≤ 3 */}
+              {p.stock <= 3 && (
+                <span className="rounded-full px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold bg-orange-50 text-orange-700">
+                  {p.stock === 0 ? "Agotado" : p.stock === 1 ? "Última unidad" : `Quedan ${p.stock}`}
+                </span>
+              )}
             </div>
 
             {/* Descripción */}
@@ -216,7 +213,7 @@ useEffect(() => {
               </div>
             )}
 
-            {/* Acciones - SIEMPRE VISIBLE */}
+            {/* Acciones */}
             <div className="space-y-3 sm:space-y-4 mt-auto">
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
                 <div className="flex items-center gap-3">
@@ -247,9 +244,9 @@ useEffect(() => {
                     }
                   }}
                   disabled={!canAdd}
-                  className={`flex-1 rounded-lg px-4 sm:px-6 py-3 text-sm sm:text-base font-semibold transition-all ${
+                  className={`flex-1 rounded-xl px-4 sm:px-6 py-3 text-sm sm:text-base font-medium transition-all ${
                     canAdd
-                      ? "bg-gray-900 text-white hover:bg-black active:scale-95 shadow-lg hover:shadow-xl"
+                      ? "bg-gray-900 text-white hover:bg-black shadow-md hover:shadow-lg"
                       : "cursor-not-allowed bg-gray-300 text-gray-500"
                   }`}
                 >
@@ -271,7 +268,6 @@ useEffect(() => {
           className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4"
           onClick={() => setZoomedImage(null)}
         >
-          {/* Botón cerrar */}
           <button
             onClick={() => setZoomedImage(null)}
             className="absolute top-4 right-4 text-white text-3xl sm:text-4xl hover:text-gray-300 transition z-10"
@@ -279,7 +275,6 @@ useEffect(() => {
             ✕
           </button>
 
-          {/* Imagen */}
           <img
             src={zoomedImage}
             alt="Zoom"
@@ -287,10 +282,8 @@ useEffect(() => {
             onClick={(e) => e.stopPropagation()}
           />
 
-          {/* Navegación (solo si hay más de 1 imagen) */}
           {images.length > 1 && (
             <>
-              {/* Flecha izquierda */}
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -305,7 +298,6 @@ useEffect(() => {
                 </svg>
               </button>
 
-              {/* Flecha derecha */}
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -320,14 +312,12 @@ useEffect(() => {
                 </svg>
               </button>
 
-              {/* Indicador de posición */}
               <div className="absolute bottom-16 sm:bottom-20 left-1/2 -translate-x-1/2 bg-black/60 text-white text-xs sm:text-sm px-3 sm:px-4 py-1.5 sm:py-2 rounded-full font-medium">
                 {currentImageIndex + 1} / {images.length}
               </div>
             </>
           )}
 
-          {/* Instrucciones */}
           <p className="absolute bottom-4 text-white text-xs sm:text-sm text-center px-4">
             {images.length > 1 ? (
               <>Usa las flechas para navegar • Click fuera para cerrar</>
