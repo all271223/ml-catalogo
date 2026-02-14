@@ -33,8 +33,8 @@ export default function ProductCard({
   const savings = hasDiscount ? (p.original_price || 0) - (p.price || 0) : 0;
 
   return (
-    <article className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition hover:shadow-md">
-      {/* Imagen - FONDO BLANCO (limpio) */}
+    <article className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition hover:shadow-lg hover:border-gray-300">
+      {/* Imagen */}
       <div 
         className="relative aspect-square w-full overflow-hidden bg-white cursor-pointer p-4"
         onClick={onOpenModal}
@@ -43,103 +43,92 @@ export default function ProductCard({
           src={src}
           alt={p.name}
           loading="lazy"
-          className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-[1.04]"
+          className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
         />
         
-        {/* Badge de descuento - VERDE AZULADO (como Mercado Libre) */}
+        {/* Badge OPTIMIZADO con urgencia */}
         {hasDiscount && p.discount_percent && (
           <div className="absolute top-3 right-3">
-            <span className="inline-flex items-center rounded-full bg-[#2A9D8F] px-3 py-1 text-xs font-bold text-white shadow-lg">
-              -{p.discount_percent}% OFF
+            <span className="inline-flex items-center gap-1 rounded-lg bg-gradient-to-r from-red-500 to-orange-500 px-3 py-1.5 text-xs font-bold text-white shadow-lg">
+              🔥 -{p.discount_percent}% HOY
             </span>
           </div>
         )}
       </div>
 
       {/* Contenido */}
-      <div className="p-4">
+      <div className="p-4 space-y-3">
         {/* Marca */}
-        {p.brand ? (
-          <div className="text-xs font-medium text-gray-500">{p.brand}</div>
-        ) : (
-          <div className="h-4" />
+        {p.brand && (
+          <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">{p.brand}</div>
         )}
 
         {/* Nombre - clickable */}
         <h3 
-          className="mt-1 line-clamp-2 text-sm font-semibold text-gray-900 cursor-pointer hover:text-blue-600 transition"
+          className="line-clamp-2 text-base font-semibold text-gray-900 cursor-pointer hover:text-blue-600 transition min-h-[48px]"
           onClick={onOpenModal}
         >
           {p.name}
         </h3>
 
-        {/* Indicador de stock - NARANJA (solo para alertas) */}
+        {/* Stock bajo - OPTIMIZADO con urgencia */}
         {p.stock <= 0 ? (
-          <div className="mt-2 flex items-center gap-1.5 text-xs font-medium text-gray-500">
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 bg-gray-100 rounded-md px-2 py-1">
             <span>⚫</span>
-            <span>Sin stock disponible</span>
+            <span>Agotado</span>
           </div>
         ) : p.stock <= 3 ? (
-          <div className="mt-2 flex items-center gap-1.5 text-xs font-medium text-[#F97316]">
+          <div className="flex items-center gap-1.5 text-xs font-bold text-white bg-gradient-to-r from-red-600 to-orange-600 rounded-md px-2 py-1.5 animate-pulse">
             <span>⚠️</span>
             <span>
               {p.stock === 1
-                ? "¡Última unidad disponible!"
-                : `Solo quedan ${p.stock} unidades`}
+                ? "¡ÚLTIMA UNIDAD!"
+                : `¡SOLO QUEDAN ${p.stock}!`}
             </span>
           </div>
         ) : null}
 
-        {/* Precio + CTA */}
-        <div className="mt-4 flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            {/* Precio con descuento - SOBRIO */}
-            {hasDiscount ? (
-              <div>
-                <div className="text-[11px] font-medium text-gray-500">
-                  Precio original:{" "}
-                  <span className="line-through">
-                    ${Intl.NumberFormat("es-CL").format(Number(p.original_price))}
-                  </span>
-                </div>
-                <div className="text-base sm:text-lg font-bold text-gray-900 break-words">
-  Oferta ml-catalogo: ${Intl.NumberFormat("es-CL").format(Number(p.price) || 0)}
-</div>
-                <div className="text-xs font-medium text-[#2A9D8F]">
+        {/* PRECIO HÉROE - Optimizado */}
+        <div className="space-y-1">
+          {hasDiscount ? (
+            <>
+              {/* Precio final - HÉROE */}
+              <div className="text-3xl font-black text-gray-900">
+                ${Intl.NumberFormat("es-CL").format(Number(p.price) || 0)}
+              </div>
+              
+              {/* Precio original - secundario */}
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-500 line-through">
+                  ${Intl.NumberFormat("es-CL").format(Number(p.original_price))}
+                </span>
+                <span className="text-sm font-bold text-green-600">
                   Ahorras ${Intl.NumberFormat("es-CL").format(savings)}
-                </div>
+                </span>
               </div>
-            ) : (
-              <div>
-                <div className="text-[11px] font-medium text-gray-500">Precio</div>
-                <div className="truncate text-lg font-semibold text-gray-900">
-                  ${Intl.NumberFormat("es-CL").format(Number(p.price) || 0)}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Botón - NEGRO (sobrio, como Mercado Libre) */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              addItem(p);
-            }}
-            disabled={!canAdd}
-            className={`shrink-0 rounded-xl px-4 py-2 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-              canAdd
-                ? "bg-gray-900 text-white hover:bg-black focus:ring-gray-900"
-                : "cursor-not-allowed bg-gray-200 text-gray-500"
-            }`}
-          >
-            Agregar
-          </button>
+            </>
+          ) : (
+            <div className="text-3xl font-black text-gray-900">
+              ${Intl.NumberFormat("es-CL").format(Number(p.price) || 0)}
+            </div>
+          )}
         </div>
 
-        {/* Microcopy */}
-        <p className="mt-3 text-center text-xs text-gray-500">
-          Finaliza por WhatsApp desde el carrito.
-        </p>
+        {/* CTA - FULL WIDTH + dominante */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            addItem(p);
+          }}
+          disabled={!canAdd}
+          className={`w-full rounded-xl px-6 py-4 text-base font-bold transition-all duration-200 ${
+            canAdd
+              ? "bg-black text-white hover:bg-gray-800 active:scale-[0.98] shadow-lg hover:shadow-xl"
+              : "cursor-not-allowed bg-gray-200 text-gray-500"
+          }`}
+        >
+          {canAdd ? "Agregar al carrito" : "Sin stock"}
+        </button>
       </div>
     </article>
   );
