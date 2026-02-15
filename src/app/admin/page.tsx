@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { supabasePublic } from "../lib/supabasePublic";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import VariantsManager, { VariantFormData } from "../components/VariantsManager";
 
 export default function AdminPage() {
   const [loading, setLoading] = useState(false);
@@ -26,6 +27,10 @@ export default function AdminPage() {
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [calculatedPrice, setCalculatedPrice] = useState(0);
 
+  // ✅ NUEVO: Estado para variantes
+  const [hasVariants, setHasVariants] = useState(false);
+  const [variants, setVariants] = useState<VariantFormData[]>([]);
+
   useEffect(() => {
     checkUser();
   }, []);
@@ -36,11 +41,9 @@ export default function AdminPage() {
   
   if (original > 0 && discount >= 0 && discount <= 100) {
     const salePrice = original - (original * (discount / 100));
-    // Redondear al millar más cercano (mínimo $1.000)
     const rounded = Math.max(1000, Math.round(salePrice / 1000) * 1000);
     setCalculatedPrice(rounded);
   } else if (original > 0 && !discount) {
-    // Si no hay descuento, también redondear (mínimo $1.000)
     const rounded = Math.max(1000, Math.round(original / 1000) * 1000);
     setCalculatedPrice(rounded);
   } else {
@@ -72,7 +75,6 @@ export default function AdminPage() {
     
     setImageFiles(files);
     
-    // Generar previews
     const previews: string[] = [];
     files.forEach((file) => {
       const reader = new FileReader();
@@ -93,15 +95,37 @@ export default function AdminPage() {
     setImagePreviews(newPreviews);
   };
 
+  // ✅ NUEVO: Handlers para variantes
+  const handleAddVariant = (variant: VariantFormData) => {
+    setVariants([...variants, variant]);
+  };
+
+  const handleEditVariant = (index: number, variant: VariantFormData) => {
+    const newVariants = [...variants];
+    newVariants[index] = variant;
+    setVariants(newVariants);
+  };
+
+  const handleDeleteVariant = (index: number) => {
+    setVariants(variants.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setMessage("");
 
     try {
+      // ✅ Validación: Si tiene variantes, debe tener al menos 1
+      if (hasVariants && variants.length === 0) {
+        setMessage("Debes agregar al menos una variante");
+        setLoading(false);
+        return;
+      }
+
       const imagePaths: string[] = [];
 
-      // Subir todas las imágenes
+      // Subir todas las imágenes del producto
       for (const file of imageFiles) {
         const fileExt = file.name.split(".").pop();
         const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
@@ -115,22 +139,62 @@ export default function AdminPage() {
 
       const discountValue = formData.discount_percent ? parseFloat(formData.discount_percent) : null;
 
-      const { error: insertError } = await supabasePublic.from("products").insert({
-        name: formData.name,
-        brand: formData.brand || null,
-        description: formData.description || null,
-        original_price: formData.original_price ? parseFloat(formData.original_price) : null,
-        price: calculatedPrice,
-        discount_percent: discountValue,
-        stock: parseInt(formData.stock),
-        barcode: formData.barcode || null,
-        sku: formData.sku || null,
-        store: formData.store || null,
-        image_path: imagePaths.length > 0 ? imagePaths : null,
-        is_visible: true,
-      });
+      // ✅ Si tiene variantes, el stock del producto debe ser 0
+      const productStock = hasVariants ? 0 : parseInt(formData.stock);
+
+      const { data: productData, error: insertError } = await supabasePublic
+        .from("products")
+        .insert({
+          name: formData.name,
+          brand: formData.brand || null,
+          description: formData.description || null,
+          original_price: formData.original_price ? parseFloat(formData.original_price) : null,
+          price: calculatedPrice,
+          discount_percent: discountValue,
+          stock: productStock,
+          barcode: formData.barcode || null,
+          sku: formData.sku || null,
+          store: formData.store || null,
+          image_path: imagePaths.length > 0 ? imagePaths : null,
+          is_visible: true,
+          has_variants: hasVariants, // ✅ NUEVO
+        })
+        .select()
+        .single();
 
       if (insertError) throw insertError;
+
+      // ✅ NUEVO: Si tiene variantes, insertarlas
+      if (hasVariants && productData) {
+        for (const variant of variants) {
+          // Subir imágenes específicas de la variante (si tiene)
+          const variantImagePaths: string[] = [];
+          for (const file of variant.variant_images) {
+            const fileExt = file.name.split(".").pop();
+            const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+            const { error: uploadError } = await supabasePublic.storage
+              .from("product-images")
+              .upload(fileName, file);
+
+            if (uploadError) throw uploadError;
+            variantImagePaths.push(fileName);
+          }
+
+          const { error: variantError } = await supabasePublic
+            .from("product_variants")
+            .insert({
+              product_id: productData.id,
+              sku: variant.sku || null,
+              barcode: variant.barcode || null,
+              attributes: variant.attributes,
+              stock: variant.stock,
+              is_available: true,
+              variant_images: variantImagePaths.length > 0 ? variantImagePaths : null,
+            });
+
+          if (variantError) throw variantError;
+        }
+      }
 
       setMessage("Producto creado exitosamente");
       setFormData({
@@ -146,6 +210,8 @@ export default function AdminPage() {
       });
       setImageFiles([]);
       setImagePreviews([]);
+      setHasVariants(false);
+      setVariants([]);
       const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
       if (fileInput) fileInput.value = "";
     } catch (error: unknown) {
@@ -290,19 +356,55 @@ export default function AdminPage() {
             </div>
           )}
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Stock inicial *
+          {/* ✅ NUEVO: Toggle de variantes */}
+          <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={hasVariants}
+                onChange={(e) => {
+                  setHasVariants(e.target.checked);
+                  if (!e.target.checked) {
+                    setVariants([]);
+                  }
+                }}
+                className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+              />
+              <div>
+                <span className="text-sm font-medium text-gray-700">
+                  Este producto tiene variantes
+                </span>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  (Ej: diferentes tallas, colores o diseños)
+                </p>
+              </div>
             </label>
-            <input
-              type="number"
-              required
-              value={formData.stock}
-              onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="10"
-            />
           </div>
+
+          {/* ✅ NUEVO: Gestor de variantes */}
+          {hasVariants ? (
+            <VariantsManager
+              variants={variants}
+              productSKU={formData.sku || "PROD"}
+              onAdd={handleAddVariant}
+              onEdit={handleEditVariant}
+              onDelete={handleDeleteVariant}
+            />
+          ) : (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Stock inicial *
+              </label>
+              <input
+                type="number"
+                required={!hasVariants}
+                value={formData.stock}
+                onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="10"
+              />
+            </div>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -315,6 +417,11 @@ export default function AdminPage() {
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="7804876543210"
             />
+            {hasVariants && (
+              <p className="text-xs text-gray-500 mt-1">
+                💡 Puedes asignar códigos de barras específicos a cada variante
+              </p>
+            )}
           </div>
 
           <div>
@@ -380,7 +487,6 @@ export default function AdminPage() {
                         const draggedIdx = parseInt(e.dataTransfer.getData("text/html"));
                         if (draggedIdx === idx) return;
                         
-                        // Reordenar arrays
                         const newPreviews = [...imagePreviews];
                         const newFiles = [...imageFiles];
                         
