@@ -278,7 +278,7 @@ export default function VariantsManager({
       ) : (
         <div className="p-8 text-center bg-gray-50 border border-gray-200 rounded-lg">
           <p className="text-gray-500 text-sm">
-            No hay variantes agregadas. Haz clic en "Agregar variante" para comenzar.
+            No No hay variantes agregadas. Haz clic en &quot;Agregar variante&quot; para comenzar.
           </p>
         </div>
       )}
