@@ -1,5 +1,5 @@
-// Script para REDONDEAR PRECIOS al millar más cercano
-// Ejecutar: node round-prices.js
+// Script para REDONDEAR PRECIOS al millar más cercano - SIN LÍMITE
+// Ejecutar: node round-prices-ALL.js
 
 require('dotenv').config({ path: '.env.local' });
 
@@ -22,27 +22,49 @@ function roundToThousand(price) {
 }
 
 async function roundAllPrices() {
-  console.log('🔄 Iniciando redondeo de precios...\n');
+  console.log('🔄 Iniciando redondeo de precios (TODOS los productos)...\n');
 
-  // 1. Obtener TODOS los productos
+  let allProducts = [];
+  let from = 0;
+  const batchSize = 1000;
+  let hasMore = true;
+
+  // 1. Obtener TODOS los productos en lotes
   console.log('📥 Obteniendo productos de Supabase...');
-  const { data: products, error: fetchError } = await supabase
-    .from('products')
-    .select('id, name, price, original_price');
+  
+  while (hasMore) {
+    const { data, error } = await supabase
+      .from('products')
+      .select('id, name, price, original_price')
+      .range(from, from + batchSize - 1);
 
-  if (fetchError) {
-    console.error('❌ Error al obtener productos:', fetchError.message);
-    process.exit(1);
+    if (error) {
+      console.error('❌ Error al obtener productos:', error.message);
+      process.exit(1);
+    }
+
+    if (data && data.length > 0) {
+      allProducts = allProducts.concat(data);
+      console.log(`   Obtenidos ${allProducts.length} productos...`);
+      from += batchSize;
+      
+      // Si obtuvimos menos de batchSize, no hay más
+      if (data.length < batchSize) {
+        hasMore = false;
+      }
+    } else {
+      hasMore = false;
+    }
   }
 
-  console.log(`✅ ${products.length} productos encontrados\n`);
+  console.log(`✅ ${allProducts.length} productos encontrados en total\n`);
 
   // 2. Procesar y actualizar
   let updated = 0;
   let unchanged = 0;
   const changes = [];
 
-  for (const product of products) {
+  for (const product of allProducts) {
     const oldPrice = product.price;
     const newPrice = roundToThousand(oldPrice);
 
@@ -70,7 +92,7 @@ async function roundAllPrices() {
 
     // Progress cada 100 productos
     if ((updated + unchanged) % 100 === 0) {
-      console.log(`📊 Progreso: ${updated + unchanged}/${products.length}`);
+      console.log(`📊 Progreso: ${updated + unchanged}/${allProducts.length}`);
     }
   }
 
@@ -80,7 +102,7 @@ async function roundAllPrices() {
   console.log('='.repeat(70));
   console.log(`✅ Precios actualizados: ${updated}`);
   console.log(`⏭️  Sin cambios: ${unchanged}`);
-  console.log(`📦 Total procesados: ${products.length}`);
+  console.log(`📦 Total procesados: ${allProducts.length}`);
   console.log('='.repeat(70));
 
   // 4. Mostrar primeros 20 cambios
