@@ -25,6 +25,7 @@ export default function AdminProductsPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [checking, setChecking] = useState(true);
+  const [showOnlyInStock, setShowOnlyInStock] = useState(true); // ✅ NUEVO: Por defecto activado
 
   useEffect(() => {
     checkUser();
@@ -41,25 +42,20 @@ export default function AdminProductsPage() {
   }
 
   async function fetchProducts() {
-  setLoading(true);
-  const { data, error } = await supabasePublic
-    .from("products")
-    .select("*")
-    .order("created_at", { ascending: false });
+    setLoading(true);
+    const { data, error } = await supabasePublic
+      .from("products")
+      .select("*")
+      .order("created_at", { ascending: false });
 
-  console.log("========== DEBUG ==========");
-  console.log("Productos obtenidos:", data);
-  console.log("Error:", error);
-  console.log("===========================");
-
-  if (error) {
-    console.error("Error fetching products:", error);
-    alert("Error al cargar productos");
-  } else {
-    setProducts(data || []);
+    if (error) {
+      console.error("Error fetching products:", error);
+      alert("Error al cargar productos");
+    } else {
+      setProducts(data || []);
+    }
+    setLoading(false);
   }
-  setLoading(false);
-}
 
   async function handleDelete(productId: string, productName: string) {
     const confirmed = confirm(
@@ -82,11 +78,18 @@ export default function AdminProductsPage() {
     }
   }
 
-  // Filtrar productos por búsqueda
-  const filteredProducts = products.filter((p) =>
-    p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (p.brand && p.brand.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  // ✅ MODIFICADO: Filtrar por búsqueda Y stock
+  const filteredProducts = products.filter((p) => {
+    // Filtro de búsqueda
+    const matchesSearch =
+      p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (p.brand && p.brand.toLowerCase().includes(searchTerm.toLowerCase()));
+
+    // Filtro de stock
+    const matchesStock = showOnlyInStock ? p.stock > 0 : true;
+
+    return matchesSearch && matchesStock;
+  });
 
   if (checking) {
     return (
@@ -133,8 +136,31 @@ export default function AdminProductsPage() {
             placeholder="🔍 Buscar por nombre o marca..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 mb-4"
           />
+
+          {/* ✅ NUEVO: Toggle "Solo productos con stock" */}
+          <label className="flex items-center gap-3 cursor-pointer bg-blue-50 border border-blue-200 rounded-lg px-4 py-3">
+            <input
+              type="checkbox"
+              checked={showOnlyInStock}
+              onChange={(e) => setShowOnlyInStock(e.target.checked)}
+              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+            />
+            <div className="flex-1">
+              <span className="text-sm font-medium text-gray-800">
+                Mostrar solo productos con stock
+              </span>
+              <p className="text-xs text-gray-600 mt-0.5">
+                {showOnlyInStock
+                  ? "Ocultando productos sin stock"
+                  : "Mostrando todos los productos"}
+              </p>
+            </div>
+            <span className="text-xs font-semibold text-blue-600">
+              {showOnlyInStock ? "✓ Activado" : "Desactivado"}
+            </span>
+          </label>
         </div>
 
         {/* Lista de productos */}
@@ -143,8 +169,18 @@ export default function AdminProductsPage() {
             <p className="text-gray-500 text-lg">
               {searchTerm
                 ? "No se encontraron productos"
+                : showOnlyInStock
+                ? "No hay productos con stock disponible"
                 : "No tienes productos creados"}
             </p>
+            {showOnlyInStock && !searchTerm && (
+              <button
+                onClick={() => setShowOnlyInStock(false)}
+                className="mt-4 text-blue-600 hover:text-blue-800 font-medium"
+              >
+                Ver todos los productos (incluidos sin stock)
+              </button>
+            )}
           </div>
         ) : (
           <div className="space-y-4">
