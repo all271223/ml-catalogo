@@ -22,6 +22,7 @@ export default function AdminPage() {
     barcode: "",
     sku: "",
     store: "",
+    category: "", // ✅ NUEVO
   });
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
@@ -155,9 +156,10 @@ export default function AdminPage() {
           barcode: formData.barcode || null,
           sku: formData.sku || null,
           store: formData.store || null,
+          category: formData.category || null, // ✅ NUEVO
           image_path: imagePaths.length > 0 ? imagePaths : null,
           is_visible: true,
-          has_variants: hasVariants, // ✅ NUEVO
+          has_variants: hasVariants,
         })
         .select()
         .single();
@@ -207,6 +209,7 @@ export default function AdminPage() {
         barcode: "",
         sku: "",
         store: "",
+        category: "", // ✅ NUEVO
       });
       setImageFiles([]);
       setImagePreviews([]);
@@ -444,6 +447,31 @@ export default function AdminPage() {
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Tienda Principal"
             />
+          </div>
+
+          {/* ✅ NUEVO: Select de Categoría */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Categoría
+            </label>
+            <select
+              value={formData.category}
+              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="">Sin categoría</option>
+              <option value="Herramientas">🔧 Herramientas</option>
+              <option value="Ropa">👕 Ropa</option>
+              <option value="Calzado">👟 Calzado</option>
+              <option value="Para Bebés">👶 Para Bebés</option>
+              <option value="Bolsos y Mochilas">🎒 Bolsos y Mochilas</option>
+              <option value="Entretenimiento">🎮 Entretenimiento</option>
+              <option value="Accesorios">💍 Accesorios</option>
+              <option value="Electrónica">📱 Electrónica</option>
+              <option value="Hogar y Decoración">🏠 Hogar y Decoración</option>
+              <option value="Juguetes">🧸 Juguetes</option>
+              <option value="Otros">📦 Otros</option>
+            </select>
           </div>
 
           {/* IMÁGENES CON PREVIEW REAL - MÁXIMO 10 - CON DRAG & DROP */}
