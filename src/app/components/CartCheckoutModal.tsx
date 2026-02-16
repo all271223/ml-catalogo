@@ -22,6 +22,10 @@ export default function CartCheckoutModal({
         name: i.name,
         price: Number(i.price) || 0,
         qty: i.qty,
+        // ✅ NUEVO: Formatear variante para WhatsApp
+        variant: i.variant
+          ? Object.values(i.variant.attributes).filter(Boolean).join(" / ")
+          : undefined,
       })),
       Number(total) || 0
     );
@@ -79,10 +83,16 @@ export default function CartCheckoutModal({
 
                 <ul className="divide-y text-sm">
                   {items.map((it) => (
-                    <li key={it.id} className="flex items-start gap-3 py-3">
+                    <li key={`${it.id}-${it.variant?.variantId || 'no-variant'}`} className="flex items-start gap-3 py-3">
                       <div className="min-w-0 flex-1">
                         <div className="truncate font-medium text-gray-900">
                           {it.name}
+                          {/* ✅ NUEVO: Mostrar variante si existe */}
+                          {it.variant && (
+                            <span className="ml-2 text-purple-600 text-sm">
+                              ({Object.values(it.variant.attributes).filter(Boolean).join(" / ")})
+                            </span>
+                          )}
                         </div>
                         <div className="mt-0.5 text-xs text-gray-500">
                           Cantidad: {it.qty}
@@ -107,7 +117,7 @@ export default function CartCheckoutModal({
 
                       {/* Botón eliminar */}
                       <button
-                        onClick={() => removeItem(it.id)}
+                        onClick={() => removeItem(it.id, it.variant?.variantId)}
                         className="shrink-0 rounded-full p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 transition"
                         aria-label="Eliminar producto"
                         title="Eliminar"

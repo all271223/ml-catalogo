@@ -4,6 +4,7 @@ export type WAItem = {
   name: string;
   price: number; // en pesos
   qty: number;
+  variant?: string; // ✅ NUEVO: Atributos de la variante formateados (ej: "Rojo / M")
 };
 
 function normalizePhone(raw: string) {
@@ -37,7 +38,11 @@ export function buildWhatsAppMessage(items: WAItem[], total: number) {
     const price = Number(it.price) || 0;
     const qty = Number(it.qty) || 0;
     const lineTotal = price * qty;
-    lines.push(`• ${it.name} x${qty} — $${formatCLP(lineTotal)}`);
+    
+    // ✅ NUEVO: Agregar variante si existe
+    const variantText = it.variant ? ` _(${it.variant})_` : "";
+    
+    lines.push(`• ${it.name}${variantText} x${qty} — $${formatCLP(lineTotal)}`);
   }
 
   lines.push("");
@@ -46,7 +51,7 @@ export function buildWhatsAppMessage(items: WAItem[], total: number) {
 
   const text = encodeURIComponent(lines.join("\n"));
 
-  // ✅ En móviles, este deep link evita el flujo “Compartir enlace”
+  // ✅ En móviles, este deep link evita el flujo "Compartir enlace"
   if (isMobileDevice()) {
     return `whatsapp://send?phone=${phone}&text=${text}`;
   }
