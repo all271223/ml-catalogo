@@ -16,6 +16,7 @@ type Product = {
   store?: string | null;
   sku?: string | null;
   barcode?: string | null;
+  has_variants?: boolean; // ✅ NUEVO
 };
 
 export default function ProductCard({ 
@@ -27,7 +28,7 @@ export default function ProductCard({
 }) {
   const { addItem } = useCart();
   const src = imagePublicUrl(p.image_url);
-  const canAdd = p.stock > 0;
+  const canAdd = p.stock > 0 && !p.has_variants; // ✅ No agregar directo si tiene variantes
   
   const hasDiscount = p.original_price && p.original_price > (p.price || 0);
   const savings = hasDiscount ? (p.original_price || 0) - (p.price || 0) : 0;
@@ -71,13 +72,21 @@ export default function ProductCard({
           {p.name}
         </h3>
 
-        {/* Stock bajo - SOLO si ≤ 3 */}
-        {p.stock <= 0 ? (
+        {/* ✅ NUEVO: Badge si tiene variantes */}
+        {p.has_variants && (
+          <div className="flex items-center gap-1.5 text-xs font-medium text-purple-700 bg-purple-50 rounded-md px-2 py-1">
+            <span>🎨</span>
+            <span>Múltiples opciones disponibles</span>
+          </div>
+        )}
+
+        {/* Stock bajo - SOLO si ≤ 3 Y NO tiene variantes */}
+        {!p.has_variants && p.stock <= 0 ? (
           <div className="flex items-center gap-1.5 text-xs font-medium text-gray-500 bg-gray-100 rounded-md px-2 py-1">
             <span>⚫</span>
             <span>Agotado</span>
           </div>
-        ) : p.stock <= 3 ? (
+        ) : !p.has_variants && p.stock <= 3 ? (
           <div className="flex items-center gap-1.5 text-xs font-medium text-orange-700 bg-orange-50 rounded-md px-2 py-1">
             <span>⚠️</span>
             <span>
@@ -115,20 +124,33 @@ export default function ProductCard({
         </div>
 
         {/* CTA - Full width pero no exagerado */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            addItem(p);
-          }}
-          disabled={!canAdd}
-          className={`w-full rounded-xl px-6 py-2.5 text-sm font-medium transition-all duration-200 ${
-            canAdd
-              ? "bg-gray-900 text-white hover:bg-black shadow-sm hover:shadow-md"
-              : "cursor-not-allowed bg-gray-200 text-gray-500"
-          }`}
-        >
-          {canAdd ? "Agregar al carrito" : "Sin stock"}
-        </button>
+        {/* ✅ MODIFICADO: Si tiene variantes, abrir modal para seleccionar */}
+        {p.has_variants ? (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpenModal?.();
+            }}
+            className="w-full rounded-xl px-6 py-2.5 text-sm font-medium transition-all duration-200 bg-purple-600 text-white hover:bg-purple-700 shadow-sm hover:shadow-md"
+          >
+            Ver opciones
+          </button>
+        ) : (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              addItem(p);
+            }}
+            disabled={!canAdd}
+            className={`w-full rounded-xl px-6 py-2.5 text-sm font-medium transition-all duration-200 ${
+              canAdd
+                ? "bg-gray-900 text-white hover:bg-black shadow-sm hover:shadow-md"
+                : "cursor-not-allowed bg-gray-200 text-gray-500"
+            }`}
+          >
+            {canAdd ? "Agregar al carrito" : "Sin stock"}
+          </button>
+        )}
       </div>
     </article>
   );

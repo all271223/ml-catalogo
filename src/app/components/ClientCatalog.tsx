@@ -17,7 +17,8 @@ export type CatalogProduct = {
   description?: string | null;
   sku?: string | null;
   barcode?: string | null;
-  category?: string | null; // ✅ NUEVO
+  category?: string | null;
+  has_variants?: boolean; // ✅ NUEVO
 };
 
 type CategoryCount = {
@@ -56,20 +57,21 @@ export default function ClientCatalog() {
         .from("products")
         .select(
           `
-          id,
-          name,
-          price,
-          original_price,
-          discount_percent,
-          stock,
-          image_url:image_path,
-          brand,
-          store,
-          description,
-          sku,
-          barcode,
-          category
-        `
+    id,
+    name,
+    price,
+    original_price,
+    discount_percent,
+    stock,
+    image_url:image_path,
+    brand,
+    store,
+    description,
+    sku,
+    barcode,
+    category,
+    has_variants
+  `
         )
         .eq("is_visible", true)
         .order("name", { ascending: true });
@@ -110,11 +112,11 @@ export default function ClientCatalog() {
   // ✅ Filtrar productos según categoría seleccionada
   const filteredProducts = useMemo(() => {
     if (!selectedCategory) return products;
-    
+
     if (selectedCategory === "Sin categoría") {
       return products.filter((p) => !p.category);
     }
-    
+
     return products.filter((p) => p.category === selectedCategory);
   }, [products, selectedCategory]);
 
@@ -140,15 +142,14 @@ export default function ClientCatalog() {
       <aside className="hidden lg:block w-64 flex-shrink-0">
         <div className="bg-white rounded-lg shadow-md p-4 sticky top-24">
           <h2 className="text-lg font-bold text-gray-800 mb-4">Categorías</h2>
-          
+
           {/* Todas */}
           <button
             onClick={() => setSelectedCategory(null)}
-            className={`w-full text-left px-4 py-3 rounded-lg mb-2 transition ${
-              selectedCategory === null
+            className={`w-full text-left px-4 py-3 rounded-lg mb-2 transition ${selectedCategory === null
                 ? "bg-blue-600 text-white font-semibold"
                 : "bg-gray-50 text-gray-700 hover:bg-gray-100"
-            }`}
+              }`}
           >
             <div className="flex items-center justify-between">
               <span className="flex items-center gap-2">
@@ -164,11 +165,10 @@ export default function ClientCatalog() {
             <button
               key={cat.name}
               onClick={() => setSelectedCategory(cat.name)}
-              className={`w-full text-left px-4 py-3 rounded-lg mb-2 transition ${
-                selectedCategory === cat.name
+              className={`w-full text-left px-4 py-3 rounded-lg mb-2 transition ${selectedCategory === cat.name
                   ? "bg-blue-600 text-white font-semibold"
                   : "bg-gray-50 text-gray-700 hover:bg-gray-100"
-              }`}
+                }`}
             >
               <div className="flex items-center justify-between">
                 <span className="flex items-center gap-2">
@@ -214,11 +214,10 @@ export default function ClientCatalog() {
                 setSelectedCategory(null);
                 setShowMobileMenu(false);
               }}
-              className={`w-full text-left px-4 py-3 rounded-lg mb-1 transition ${
-                selectedCategory === null
+              className={`w-full text-left px-4 py-3 rounded-lg mb-1 transition ${selectedCategory === null
                   ? "bg-blue-600 text-white font-semibold"
                   : "bg-gray-50 text-gray-700"
-              }`}
+                }`}
             >
               <div className="flex items-center justify-between">
                 <span className="flex items-center gap-2">
@@ -237,11 +236,10 @@ export default function ClientCatalog() {
                   setSelectedCategory(cat.name);
                   setShowMobileMenu(false);
                 }}
-                className={`w-full text-left px-4 py-3 rounded-lg mb-1 transition ${
-                  selectedCategory === cat.name
+                className={`w-full text-left px-4 py-3 rounded-lg mb-1 transition ${selectedCategory === cat.name
                     ? "bg-blue-600 text-white font-semibold"
                     : "bg-gray-50 text-gray-700"
-                }`}
+                  }`}
               >
                 <div className="flex items-center justify-between">
                   <span className="flex items-center gap-2">
@@ -269,7 +267,7 @@ export default function ClientCatalog() {
             </span>
           </div>
         )}
-        
+
         {filteredProducts.length > 0 ? (
           <CatalogGrid products={filteredProducts} />
         ) : (

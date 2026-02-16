@@ -18,6 +18,7 @@ type Product = {
   description?: string | null;
   sku?: string | null;
   barcode?: string | null;
+  has_variants?: boolean; // ✅ NUEVO
 };
 
 export default function CatalogGrid({ products }: { products: Product[] }) {

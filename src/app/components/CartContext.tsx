@@ -2,11 +2,23 @@
 
 import { createContext, useContext, useMemo, useRef, useState } from "react";
 
+// ✅ NUEVO: Tipo para variante
+export type CartItemVariant = {
+  variantId: string;
+  attributes: {
+    talla?: string;
+    color?: string;
+    diseño?: string;
+    [key: string]: string | undefined;
+  };
+};
+
 export type CartItem = {
   id: string;
   name: string;
   price: number | null;
   qty: number;
+  variant?: CartItemVariant; // ✅ NUEVO: Campo opcional para variantes
 };
 
 type CartToast = {
@@ -16,8 +28,8 @@ type CartToast = {
 
 type CartContextType = {
   items: CartItem[];
-  addItem: (item: Omit<CartItem, "qty">, qty?: number) => void;
-  removeItem: (id: string) => void;
+  addItem: (item: Omit<CartItem, "qty">, qty?: number, variant?: CartItemVariant) => void; // ✅ MODIFICADO
+  removeItem: (id: string, variantId?: string) => void; // ✅ MODIFICADO
   clear: () => void;
   total: number;
   count: number;
@@ -52,23 +64,53 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }, 1100);
   };
 
-  const addItem: CartContextType["addItem"] = (item, qty = 1) => {
+  // ✅ MODIFICADO: addItem ahora acepta variantes
+  const addItem: CartContextType["addItem"] = (item, qty = 1, variant) => {
     setItems((prev) => {
-      const i = prev.findIndex((p) => p.id === item.id);
+      // Si tiene variante, buscar por ID + variantId
+      if (variant) {
+        const i = prev.findIndex(
+          (p) => p.id === item.id && p.variant?.variantId === variant.variantId
+        );
+        
+        if (i >= 0) {
+          const copy = [...prev];
+          copy[i] = { ...copy[i], qty: copy[i].qty + qty };
+          return copy;
+        }
+        
+        return [...prev, { ...item, qty, variant }];
+      }
+      
+      // Sin variante (producto normal)
+      const i = prev.findIndex((p) => p.id === item.id && !p.variant);
       if (i >= 0) {
         const copy = [...prev];
         copy[i] = { ...copy[i], qty: copy[i].qty + qty };
         return copy;
       }
+      
       return [...prev, { ...item, qty }];
     });
 
-    // ✅ Feedback: “Agregado ✓”
-    showToast(`Agregado: ${item.name}`);
+    // ✅ Toast con variante si aplica
+    const variantText = variant
+      ? ` (${Object.values(variant.attributes).filter(Boolean).join(" / ")})`
+      : "";
+    showToast(`Agregado: ${item.name}${variantText}`);
   };
 
-  const removeItem: CartContextType["removeItem"] = (id) =>
-    setItems((prev) => prev.filter((p) => p.id !== id));
+  // ✅ MODIFICADO: removeItem ahora puede remover por variantId
+  const removeItem: CartContextType["removeItem"] = (id, variantId) => {
+    setItems((prev) =>
+      prev.filter((p) => {
+        if (variantId) {
+          return !(p.id === id && p.variant?.variantId === variantId);
+        }
+        return p.id !== id;
+      })
+    );
+  };
 
   const clear = () => setItems([]);
 
