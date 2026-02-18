@@ -191,7 +191,7 @@ export default function AdminProductsPage() {
               >
                 <div className="flex gap-6">
                   {/* Imagen */}
-                  <div className="w-24 h-24 flex-shrink-0 bg-white border border-gray-200 rounded-lg overflow-hidden">
+                  <div className="w-24 h-24 shrink-0 bg-white border border-gray-200 rounded-lg overflow-hidden">
                     <img
                       src={imagePublicUrl(product.image_path)}
                       alt={product.name}

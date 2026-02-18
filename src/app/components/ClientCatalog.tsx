@@ -140,7 +140,7 @@ export default function ClientCatalog() {
   return (
     <div className="flex flex-col lg:flex-row gap-6">
       {/* ✅ MENÚ LATERAL DE CATEGORÍAS - DESKTOP */}
-      <aside className="hidden lg:block w-64 flex-shrink-0">
+      <aside className="hidden lg:block w-64 shrink-0">
         <div className="bg-white rounded-lg shadow-md p-4 sticky top-24">
           <h2 className="text-lg font-bold text-gray-800 mb-4">Categorías</h2>
 
