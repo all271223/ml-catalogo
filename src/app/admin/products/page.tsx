@@ -43,17 +43,73 @@ export default function AdminProductsPage() {
 
   async function fetchProducts() {
     setLoading(true);
-    const { data, error } = await supabasePublic
+
+    let allProducts: Product[] = [];
+    const batchSize = 1000;
+
+    // Primer lote (los más recientes)
+    const first = await supabasePublic
       .from("products")
       .select("*")
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .limit(batchSize);
 
-    if (error) {
-      console.error("Error fetching products:", error);
+    if (first.error) {
+      console.error("Error fetching first batch:", first.error);
       alert("Error al cargar productos");
-    } else {
-      setProducts(data || []);
+      setLoading(false);
+      return;
     }
+
+    let batch = first.data ?? [];
+    allProducts = allProducts.concat(batch);
+
+    // Mientras sigamos recibiendo batchSize, pedimos más usando cursor
+    while (batch.length === batchSize) {
+      const lastItem = batch[batch.length - 1];
+      if (!lastItem || !lastItem.created_at) break;
+
+      const cursor = lastItem.created_at;
+
+      const next = await supabasePublic
+        .from("products")
+        .select("*")
+        .lte("created_at", cursor)
+        .order("created_at", { ascending: false })
+        .limit(batchSize);
+
+      if (next.error) {
+        console.error("Error fetching next batch:", next.error);
+        break;
+      }
+
+      batch = next.data ?? [];
+      if (!batch || batch.length === 0) break;
+
+      // Evitar duplicar el lastItem
+      if (batch[0] && batch[0].id === lastItem.id) {
+        batch = batch.slice(1);
+      }
+
+      if (batch.length === 0) break;
+      allProducts = allProducts.concat(batch);
+    }
+
+    // Dedupe por id
+    const map = new Map<string, Product>();
+    for (const p of allProducts) {
+      const existing = map.get(p.id);
+      if (!existing) {
+        map.set(p.id, p);
+      } else {
+        if (new Date(p.created_at) > new Date(existing.created_at)) {
+          map.set(p.id, p);
+        }
+      }
+    }
+    const deduped = Array.from(map.values());
+
+    setProducts(deduped);
     setLoading(false);
   }
 
@@ -72,9 +128,10 @@ export default function AdminProductsPage() {
     if (error) {
       console.error("Error deleting product:", error);
       alert("Error al eliminar producto");
+      await fetchProducts();
     } else {
       alert("Producto eliminado exitosamente");
-      fetchProducts(); // Recargar lista
+      await fetchProducts(); // ✅ AGREGAR await
     }
   }
 
@@ -170,8 +227,8 @@ export default function AdminProductsPage() {
               {searchTerm
                 ? "No se encontraron productos"
                 : showOnlyInStock
-                ? "No hay productos con stock disponible"
-                : "No tienes productos creados"}
+                  ? "No hay productos con stock disponible"
+                  : "No tienes productos creados"}
             </p>
             {showOnlyInStock && !searchTerm && (
               <button
@@ -215,11 +272,10 @@ export default function AdminProductsPage() {
 
                       {/* Badge visible/oculto */}
                       <span
-                        className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                          product.is_visible
+                        className={`px-3 py-1 rounded-full text-xs font-semibold ${product.is_visible
                             ? "bg-green-100 text-green-700"
                             : "bg-gray-100 text-gray-600"
-                        }`}
+                          }`}
                       >
                         {product.is_visible ? "Visible" : "Oculto"}
                       </span>
@@ -250,13 +306,12 @@ export default function AdminProductsPage() {
                     <p className="text-sm text-gray-600 mb-4">
                       Stock:{" "}
                       <span
-                        className={`font-semibold ${
-                          product.stock === 0
+                        className={`font-semibold ${product.stock === 0
                             ? "text-red-600"
                             : product.stock <= 3
-                            ? "text-orange-600"
-                            : "text-gray-900"
-                        }`}
+                              ? "text-orange-600"
+                              : "text-gray-900"
+                          }`}
                       >
                         {product.stock} unidades
                       </span>
