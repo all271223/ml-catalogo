@@ -54,9 +54,9 @@ export default function ClientCatalog() {
       setErrorMsg(null);
 
       const { data, error } = await supabasePublic
-        .from("products")
-        .select(
-          `
+  .from("products")
+  .select(
+    `
     id,
     name,
     price,
@@ -72,9 +72,10 @@ export default function ClientCatalog() {
     category,
     has_variants
   `
-        )
-        .eq("is_visible", true)
-        .order("name", { ascending: true });
+  )
+  .eq("is_visible", true)
+  .gt("stock", 0)  // ✅ NUEVA LÍNEA - solo productos con stock > 0
+  .order("name", { ascending: true });
 
       if (error) {
         setErrorMsg(error.message);
