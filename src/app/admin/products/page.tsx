@@ -42,76 +42,78 @@ export default function AdminProductsPage() {
   }
 
   async function fetchProducts() {
-    setLoading(true);
+  setLoading(true);
 
-    let allProducts: Product[] = [];
-    const batchSize = 1000;
+  let allProducts: Product[] = [];
+  const batchSize = 1000;
 
-    // Primer lote (los más recientes)
-    const first = await supabasePublic
+  // Primer lote (los más recientes)
+  const first = await supabasePublic
+    .from("products")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(batchSize);
+
+  if (first.error) {
+    console.error("Error fetching first batch:", first.error);
+    alert("Error al cargar productos");
+    setLoading(false);
+    return;
+  }
+
+  let batch = first.data ?? [];
+  allProducts = allProducts.concat(batch);
+
+  // Mientras sigamos recibiendo batchSize, pedimos más usando cursor (created_at)
+  while (batch.length === batchSize) {
+    const lastItem = batch[batch.length - 1];
+    if (!lastItem || !lastItem.created_at) break;
+
+    const cursor = lastItem.created_at;
+
+    // ✅ Usamos lte en lugar de lt para no perder filas con timestamps iguales
+    const next = await supabasePublic
       .from("products")
       .select("*")
+      .lte("created_at", cursor) // ✅ <= en lugar de 
       .order("created_at", { ascending: false })
       .limit(batchSize);
 
-    if (first.error) {
-      console.error("Error fetching first batch:", first.error);
+    if (next.error) {
+      console.error("Error fetching next batch:", next.error);
       alert("Error al cargar productos");
-      setLoading(false);
-      return;
+      break;
     }
 
-    let batch = first.data ?? [];
+    batch = next.data ?? [];
+    if (!batch || batch.length === 0) break;
+
+    // Evitar duplicar el lastItem
+    if (batch[0] && batch[0].id === lastItem.id) {
+      batch = batch.slice(1);
+    }
+
+    if (batch.length === 0) break;
     allProducts = allProducts.concat(batch);
-
-    // Mientras sigamos recibiendo batchSize, pedimos más usando cursor
-    while (batch.length === batchSize) {
-      const lastItem = batch[batch.length - 1];
-      if (!lastItem || !lastItem.created_at) break;
-
-      const cursor = lastItem.created_at;
-
-      const next = await supabasePublic
-        .from("products")
-        .select("*")
-        .lte("created_at", cursor)
-        .order("created_at", { ascending: false })
-        .limit(batchSize);
-
-      if (next.error) {
-        console.error("Error fetching next batch:", next.error);
-        break;
-      }
-
-      batch = next.data ?? [];
-      if (!batch || batch.length === 0) break;
-
-      // Evitar duplicar el lastItem
-      if (batch[0] && batch[0].id === lastItem.id) {
-        batch = batch.slice(1);
-      }
-
-      if (batch.length === 0) break;
-      allProducts = allProducts.concat(batch);
-    }
-
-    // Dedupe por id
-    const map = new Map<string, Product>();
-    for (const p of allProducts) {
-      const existing = map.get(p.id);
-      if (!existing) {
-        map.set(p.id, p);
-      } else {
-        if (new Date(p.created_at) > new Date(existing.created_at)) {
-          map.set(p.id, p);
-        }
-      }
-    }
-    const deduped = Array.from(map.values());
-
-    setProducts(deduped);
-    setLoading(false);
   }
+
+  // Dedupe por id
+  const map = new Map<string, Product>();
+  for (const p of allProducts) {
+    const existing = map.get(p.id);
+    if (!existing) {
+      map.set(p.id, p);
+    } else {
+      if (new Date(p.created_at) > new Date(existing.created_at)) {
+        map.set(p.id, p);
+      }
+    }
+  }
+  const deduped = Array.from(map.values());
+
+  setProducts(deduped);
+  setLoading(false);
+}
 
   async function handleDelete(productId: string, productName: string) {
     const confirmed = confirm(
