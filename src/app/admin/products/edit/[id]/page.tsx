@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { supabasePublic } from "../../../../lib/supabasePublic";
 import { imagePublicUrl } from "../../../../lib/images";
+import VariantsManager from "../../../../components/VariantsManager"; // ✅ NUEVA LÍNEA
 
 type Product = {
   id: string;
@@ -39,6 +40,9 @@ export default function EditProductPage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [product, setProduct] = useState<Product | null>(null);
+  // ✅ ESTADOS PARA VARIANTES
+  const [hasVariants, setHasVariants] = useState(false);
+  const [variants, setVariants] = useState<any[]>([]);
 
   // Imágenes actuales (paths en Supabase Storage)
   const [currentImages, setCurrentImages] = useState<string[]>([]);
@@ -82,23 +86,23 @@ export default function EditProductPage() {
   }, [checking]);
 
   // Calcular precio
- useEffect(() => {
-  const original = parseFloat(formData.original_price);
-  const discount = parseFloat(formData.discount_percent);
+  useEffect(() => {
+    const original = parseFloat(formData.original_price);
+    const discount = parseFloat(formData.discount_percent);
 
-  if (original > 0 && discount >= 0 && discount <= 100) {
-    const salePrice = original - original * (discount / 100);
-    // Redondear al millar más cercano (mínimo $1.000)
-    const rounded = Math.max(1000, Math.round(salePrice / 1000) * 1000);
-    setCalculatedPrice(rounded);
-  } else if (original > 0 && !discount) {
-    // Si no hay descuento, también redondear (mínimo $1.000)
-    const rounded = Math.max(1000, Math.round(original / 1000) * 1000);
-    setCalculatedPrice(rounded);
-  } else {
-    setCalculatedPrice(0);
-  }
-}, [formData.original_price, formData.discount_percent]);
+    if (original > 0 && discount >= 0 && discount <= 100) {
+      const salePrice = original - original * (discount / 100);
+      // Redondear al millar más cercano (mínimo $1.000)
+      const rounded = Math.max(1000, Math.round(salePrice / 1000) * 1000);
+      setCalculatedPrice(rounded);
+    } else if (original > 0 && !discount) {
+      // Si no hay descuento, también redondear (mínimo $1.000)
+      const rounded = Math.max(1000, Math.round(original / 1000) * 1000);
+      setCalculatedPrice(rounded);
+    } else {
+      setCalculatedPrice(0);
+    }
+  }, [formData.original_price, formData.discount_percent]);
 
   function flashDrop(key: string) {
     setDroppedKey(key);
@@ -158,6 +162,20 @@ export default function EditProductPage() {
     }
 
     setLoading(false);
+    // ✅ CARGAR VARIANTES SI EL PRODUCTO LAS TIENE
+    if (data.has_variants) {
+      setHasVariants(true);
+
+      const { data: variantsData } = await supabasePublic
+        .from("product_variants")
+        .select("*")
+        .eq("product_id", productId)
+        .order("created_at", { ascending: true });
+
+      if (variantsData) {
+        setVariants(variantsData);
+      }
+    }
   }
 
   function handleRemoveCurrentImage(imagePath: string) {
@@ -292,16 +310,49 @@ export default function EditProductPage() {
             : null,
           price: calculatedPrice,
           discount_percent: discountValue,
-          stock: parseInt(formData.stock),
+          stock: hasVariants ? 0 : parseInt(formData.stock), // ✅ Stock 0 si tiene variantes
           barcode: formData.barcode || null,
           sku: formData.sku || null,
           store: formData.store || null,
           image_path: finalImages.length > 0 ? finalImages : null,
           is_visible: formData.is_visible,
+          has_variants: hasVariants, // ✅ NUEVA LÍNEA
         })
         .eq("id", productId);
 
       if (error) throw error;
+
+      // ✅ GUARDAR VARIANTES
+      if (hasVariants) {
+        // Eliminar variantes existentes
+        await supabasePublic
+          .from("product_variants")
+          .delete()
+          .eq("product_id", productId);
+
+        // Insertar nuevas variantes
+        if (variants.length > 0) {
+          const variantsToInsert = variants.map((v) => ({
+            product_id: productId,
+            sku: v.sku,
+            barcode: v.barcode || null,
+            attributes: v.attributes,
+            stock: v.stock,
+            is_available: true,
+            variant_images: null, // Por ahora sin imágenes
+          }));
+
+          await supabasePublic
+            .from("product_variants")
+            .insert(variantsToInsert);
+        }
+      } else {
+        // Si se desactivaron las variantes, eliminarlas
+        await supabasePublic
+          .from("product_variants")
+          .delete()
+          .eq("product_id", productId);
+      }
 
       setMessage("Producto actualizado exitosamente");
       setTimeout(() => router.push("/admin/products"), 1500);
@@ -669,15 +720,53 @@ export default function EditProductPage() {
               Visible en catálogo público
             </label>
           </div>
+          {/* ✅ SISTEMA DE VARIANTES */}
+          <div className="border-t pt-6">
+            <div className="flex items-center gap-3 mb-4">
+              <input
+                type="checkbox"
+                id="has_variants"
+                checked={hasVariants}
+                onChange={(e) => {
+                  setHasVariants(e.target.checked);
+                  if (!e.target.checked) {
+                    setVariants([]);
+                  }
+                }}
+                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <label
+                htmlFor="has_variants"
+                className="text-sm font-medium text-gray-700"
+              >
+                Este producto tiene variantes (color, talla, diseño)
+              </label>
+            </div>
+
+            {hasVariants && (
+              <VariantsManager
+                productSKU={formData.sku || ""}
+                variants={variants}
+                onAdd={(variant) => setVariants([...variants, variant])}
+                onEdit={(index, variant) => {
+                  const updated = [...variants];
+                  updated[index] = variant;
+                  setVariants(updated);
+                }}
+                onDelete={(index) => {
+                  setVariants(variants.filter((_, i) => i !== index));
+                }}
+              />
+            )}
+          </div>
 
           {/* Mensaje */}
           {message && (
             <div
-              className={`p-4 rounded-lg ${
-                message.includes("exitosamente")
-                  ? "bg-green-50 text-green-800"
-                  : "bg-red-50 text-red-800"
-              }`}
+              className={`p-4 rounded-lg ${message.includes("exitosamente")
+                ? "bg-green-50 text-green-800"
+                : "bg-red-50 text-red-800"
+                }`}
             >
               {message}
             </div>
