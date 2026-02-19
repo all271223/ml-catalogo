@@ -2,11 +2,13 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
+import Image from "next/image"; // ✅ NUEVA LÍNEA
 import { useCart } from "./CartContext";
 import { imagePublicUrls } from "../lib/images";
 import { supabasePublic } from "../lib/supabasePublic";
 import { ProductVariant, formatVariantAttributes } from "../lib/variant-helpers";
 import VariantSelector from "./VariantSelector";
+
 
 type Product = {
   id: string;
@@ -35,7 +37,7 @@ export default function ProductModal({
   const [qty, setQty] = useState<number>(1);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
-  
+
   const [variants, setVariants] = useState<ProductVariant[]>([]);
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
   const [loadingVariants, setLoadingVariants] = useState(false);
@@ -51,11 +53,12 @@ export default function ProductModal({
     if (p?.has_variants) {
       loadVariants();
     }
-  }, [p]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [p?.has_variants, p?.id]);
 
   const loadVariants = async () => {
     if (!p) return;
-    
+
     setLoadingVariants(true);
     const { data, error } = await supabasePublic
       .from("product_variants")
@@ -73,23 +76,23 @@ export default function ProductModal({
 
   const images = useMemo(() => {
     if (!p) return [];
-    
+
     if (selectedVariant?.variant_images && selectedVariant.variant_images.length > 0) {
       return imagePublicUrls(selectedVariant.variant_images);
     }
-    
+
     return imagePublicUrls(p.image_url ?? null);
   }, [p, selectedVariant]);
 
   if (!p) return null;
 
-  const currentStock = p.has_variants && selectedVariant 
-    ? selectedVariant.stock 
+  const currentStock = p.has_variants && selectedVariant
+    ? selectedVariant.stock
     : p.stock;
 
   const canAdd = currentStock > 0 && qty > 0 && qty <= currentStock;
   const needsVariantSelection = p.has_variants && !selectedVariant;
-  
+
   const hasDiscount = p.original_price && p.original_price > (p.price || 0);
   const savings = hasDiscount ? (p.original_price || 0) - (p.price || 0) : 0;
 
@@ -119,14 +122,17 @@ export default function ProductModal({
             <div className="flex flex-col gap-3 sm:gap-4">
               {/* Imagen principal */}
               <div className="relative rounded-xl bg-white flex items-center justify-center" style={{ height: '400px' }}>
-                <img
+                <Image
                   src={images[currentImageIndex]}
                   alt={`${p.name} - Imagen ${currentImageIndex + 1}`}
+                  width={500}
+                  height={500}
                   className="w-full h-full rounded-lg object-contain cursor-pointer hover:opacity-90 transition"
                   style={{ maxHeight: '500px' }}
                   onClick={() => setZoomedImage(images[currentImageIndex])}
+                  unoptimized
                 />
-                
+
                 {hasDiscount && p.discount_percent && (
                   <div className="absolute top-3 right-3">
                     <span className="inline-flex items-center rounded-md bg-gray-100 px-2.5 sm:px-3 py-1 sm:py-1.5 text-xs font-medium text-gray-700">
@@ -170,13 +176,12 @@ export default function ProductModal({
                     <button
                       key={idx}
                       onClick={() => setCurrentImageIndex(idx)}
-                      className={`aspect-square rounded-lg overflow-hidden border-2 transition ${
-                        idx === currentImageIndex
-                          ? "border-blue-500 ring-2 ring-blue-200"
-                          : "border-gray-200 hover:border-gray-400"
-                      }`}
+                      className={`aspect-square rounded-lg overflow-hidden border-2 transition ${idx === currentImageIndex
+                        ? "border-blue-500 ring-2 ring-blue-200"
+                        : "border-gray-200 hover:border-gray-400"
+                        }`}
                     >
-                      <img src={img} alt={`Miniatura ${idx + 1}`} className="w-full h-full object-cover" />
+                      <Image src={img} alt={`Miniatura ${idx + 1}`} width={100} height={100} className="w-full h-full object-cover" unoptimized />
                     </button>
                   ))}
                 </div>
@@ -215,7 +220,7 @@ export default function ProductModal({
                     Marca: {p.brand}
                   </div>
                 )}
-                
+
                 {!p.has_variants && currentStock <= 3 && (
                   <span className="rounded-full px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold bg-orange-50 text-orange-700">
                     {currentStock === 0 ? "Agotado" : currentStock === 1 ? "Última unidad" : `Quedan ${currentStock}`}
@@ -230,13 +235,13 @@ export default function ProductModal({
                     <span>🎨</span>
                     <span>Selecciona una opción:</span>
                   </h3>
-                  
+
                   {loadingVariants ? (
                     <div className="text-center py-8 text-gray-500 text-sm">Cargando opciones...</div>
                   ) : variants.length > 0 ? (
                     <>
                       <VariantSelector variants={variants} onVariantSelect={setSelectedVariant} />
-                      
+
                       {selectedVariant && (
                         <div className="mt-4 pt-4 border-t border-purple-200">
                           <div>
@@ -306,11 +311,10 @@ export default function ProductModal({
                       }
                     }}
                     disabled={!canAdd || needsVariantSelection}
-                    className={`flex-1 rounded-xl px-4 sm:px-6 py-3 text-sm sm:text-base font-medium transition-all ${
-                      canAdd && !needsVariantSelection
-                        ? "bg-gray-900 text-white hover:bg-black shadow-md hover:shadow-lg"
-                        : "cursor-not-allowed bg-gray-300 text-gray-500"
-                    }`}
+                    className={`flex-1 rounded-xl px-4 sm:px-6 py-3 text-sm sm:text-base font-medium transition-all ${canAdd && !needsVariantSelection
+                      ? "bg-gray-900 text-white hover:bg-black shadow-md hover:shadow-lg"
+                      : "cursor-not-allowed bg-gray-300 text-gray-500"
+                      }`}
                   >
                     {needsVariantSelection ? "Selecciona una opción" : canAdd ? "Agregar al carrito" : "Sin stock"}
                   </button>
@@ -327,12 +331,12 @@ export default function ProductModal({
 
       {/* Modal de zoom */}
       {zoomedImage && (
-        <div className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4" onClick={() => setZoomedImage(null)}>
+        <div className="fixed inset-0 z-100 bg-black/95 flex items-center justify-center p-4" onClick={() => setZoomedImage(null)}>
           <button onClick={() => setZoomedImage(null)} className="absolute top-4 right-4 text-white text-3xl sm:text-4xl hover:text-gray-300 transition z-10">
             ✕
           </button>
 
-          <img src={zoomedImage} alt="Zoom" className="max-w-full max-h-full object-contain" onClick={(e) => e.stopPropagation()} />
+          <Image src={zoomedImage} alt="Zoom" width={1200} height={1200} className="max-w-full max-h-full object-contain" onClick={(e) => e.stopPropagation()} unoptimized />
 
           {images.length > 1 && (
             <>
