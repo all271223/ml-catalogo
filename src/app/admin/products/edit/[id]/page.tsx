@@ -68,6 +68,7 @@ export default function EditProductPage() {
     barcode: "",
     sku: "",
     store: "",
+    category: "", // ✅ AGREGAR ESTA LÍNEA
     is_visible: true,
   });
 
@@ -150,6 +151,7 @@ export default function EditProductPage() {
         barcode: data.barcode || "",
         sku: data.sku || "",
         store: data.store || "",
+        category: data.category || "", // ✅ NUEVA LÍNEA
         is_visible: data.is_visible ?? true,
       });
 
@@ -310,49 +312,17 @@ export default function EditProductPage() {
             : null,
           price: calculatedPrice,
           discount_percent: discountValue,
-          stock: hasVariants ? 0 : parseInt(formData.stock), // ✅ Stock 0 si tiene variantes
+          stock: parseInt(formData.stock),
           barcode: formData.barcode || null,
           sku: formData.sku || null,
           store: formData.store || null,
+          category: formData.category || null, // ✅ NUEVA LÍNEA
           image_path: finalImages.length > 0 ? finalImages : null,
           is_visible: formData.is_visible,
-          has_variants: hasVariants, // ✅ NUEVA LÍNEA
         })
         .eq("id", productId);
 
       if (error) throw error;
-
-      // ✅ GUARDAR VARIANTES
-      if (hasVariants) {
-        // Eliminar variantes existentes
-        await supabasePublic
-          .from("product_variants")
-          .delete()
-          .eq("product_id", productId);
-
-        // Insertar nuevas variantes
-        if (variants.length > 0) {
-          const variantsToInsert = variants.map((v) => ({
-            product_id: productId,
-            sku: v.sku,
-            barcode: v.barcode || null,
-            attributes: v.attributes,
-            stock: v.stock,
-            is_available: true,
-            variant_images: null, // Por ahora sin imágenes
-          }));
-
-          await supabasePublic
-            .from("product_variants")
-            .insert(variantsToInsert);
-        }
-      } else {
-        // Si se desactivaron las variantes, eliminarlas
-        await supabasePublic
-          .from("product_variants")
-          .delete()
-          .eq("product_id", productId);
-      }
 
       setMessage("Producto actualizado exitosamente");
       setTimeout(() => router.push("/admin/products"), 1500);
@@ -574,6 +544,32 @@ export default function EditProductPage() {
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
+          {/* ✅ CATEGORÍA */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Categoría
+            </label>
+            <select
+              value={formData.category}
+              onChange={(e) =>
+                setFormData({ ...formData, category: e.target.value })
+              }
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="">Sin categoría</option>
+              <option value="Herramientas">🔧 Herramientas</option>
+              <option value="Ropa">👕 Ropa</option>
+              <option value="Calzado">👟 Calzado</option>
+              <option value="Para Bebés">👶 Para Bebés</option>
+              <option value="Bolsos y Mochilas">🎒 Bolsos y Mochilas</option>
+              <option value="Entretenimiento">🎮 Entretenimiento</option>
+              <option value="Accesorios">💍 Accesorios</option>
+              <option value="Electrónica">📱 Electrónica</option>
+              <option value="Hogar y Decoración">🏠 Hogar y Decoración</option>
+              <option value="Juguetes">🧸 Juguetes</option>
+              <option value="Otros">📦 Otros</option>
+            </select>
+          </div>
 
           {/* SISTEMA DE IMÁGENES - MÁXIMO 10 - DRAG & DROP */}
           <div>
@@ -720,45 +716,7 @@ export default function EditProductPage() {
               Visible en catálogo público
             </label>
           </div>
-          {/* ✅ SISTEMA DE VARIANTES */}
-          <div className="border-t pt-6">
-            <div className="flex items-center gap-3 mb-4">
-              <input
-                type="checkbox"
-                id="has_variants"
-                checked={hasVariants}
-                onChange={(e) => {
-                  setHasVariants(e.target.checked);
-                  if (!e.target.checked) {
-                    setVariants([]);
-                  }
-                }}
-                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-              />
-              <label
-                htmlFor="has_variants"
-                className="text-sm font-medium text-gray-700"
-              >
-                Este producto tiene variantes (color, talla, diseño)
-              </label>
-            </div>
 
-            {hasVariants && (
-              <VariantsManager
-                productSKU={formData.sku || ""}
-                variants={variants}
-                onAdd={(variant) => setVariants([...variants, variant])}
-                onEdit={(index, variant) => {
-                  const updated = [...variants];
-                  updated[index] = variant;
-                  setVariants(updated);
-                }}
-                onDelete={(index) => {
-                  setVariants(variants.filter((_, i) => i !== index));
-                }}
-              />
-            )}
-          </div>
 
           {/* Mensaje */}
           {message && (
