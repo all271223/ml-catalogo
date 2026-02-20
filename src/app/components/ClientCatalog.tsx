@@ -18,7 +18,7 @@ export type CatalogProduct = {
   sku?: string | null;
   barcode?: string | null;
   category?: string | null;
-  has_variants?: boolean; // ✅ NUEVO
+  has_variants?: boolean;
 };
 
 type CategoryCount = {
@@ -46,6 +46,7 @@ export default function ClientCatalog() {
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   useEffect(() => {
@@ -54,9 +55,9 @@ export default function ClientCatalog() {
       setErrorMsg(null);
 
       const { data, error } = await supabasePublic
-  .from("products")
-  .select(
-    `
+        .from("products")
+        .select(
+          `
     id,
     name,
     price,
@@ -72,10 +73,10 @@ export default function ClientCatalog() {
     category,
     has_variants
   `
-  )
-  .eq("is_visible", true)
-  .gt("stock", 0)  // ✅ NUEVA LÍNEA - solo productos con stock > 0
-  .order("name", { ascending: true });
+        )
+        .eq("is_visible", true)
+        .gt("stock", 0)
+        .order("name", { ascending: true });
 
       if (error) {
         setErrorMsg(error.message);
@@ -90,7 +91,7 @@ export default function ClientCatalog() {
     load();
   }, []);
 
-  // ✅ Calcular categorías con productos (solo las que tienen al menos 1 producto)
+  // ✅ Calcular categorías con productos
   const categoriesWithCount = useMemo(() => {
     const counts: CategoryCount[] = [];
 
@@ -101,7 +102,6 @@ export default function ClientCatalog() {
       }
     });
 
-    // Agregar productos sin categoría si existen
     const uncategorized = products.filter((p) => !p.category).length;
     if (uncategorized > 0) {
       counts.push({ name: "Sin categoría", count: uncategorized, icon: "📋" });
@@ -110,16 +110,50 @@ export default function ClientCatalog() {
     return counts;
   }, [products]);
 
-  // ✅ Filtrar productos según categoría seleccionada
-  const filteredProducts = useMemo(() => {
-    if (!selectedCategory) return products;
+  // ✅ Calcular marcas con productos
+  const brandsWithCount = useMemo(() => {
+    const brandMap = new Map<string, { display: string; count: number }>();
 
-    if (selectedCategory === "Sin categoría") {
-      return products.filter((p) => !p.category);
+    products.forEach((p) => {
+      if (p.brand) {
+        // Normalizar: primera letra mayúscula, resto minúsculas
+        const normalized = p.brand.charAt(0).toUpperCase() + p.brand.slice(1).toLowerCase();
+
+        const existing = brandMap.get(normalized);
+        if (existing) {
+          existing.count += 1;
+        } else {
+          brandMap.set(normalized, { display: normalized, count: 1 });
+        }
+      }
+    });
+
+    return Array.from(brandMap.values())
+      .map(({ display, count }) => ({ name: display, count }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [products]);
+
+  // ✅ Filtrar productos según categoría Y marca
+  const filteredProducts = useMemo(() => {
+    let filtered = products;
+
+    if (selectedCategory) {
+      if (selectedCategory === "Sin categoría") {
+        filtered = filtered.filter((p) => !p.category);
+      } else {
+        filtered = filtered.filter((p) => p.category === selectedCategory);
+      }
     }
 
-    return products.filter((p) => p.category === selectedCategory);
-  }, [products, selectedCategory]);
+    if (selectedBrand) {
+      // ✅ SIMPLE: Comparar ambas en minúsculas
+      filtered = filtered.filter((p) => 
+        p.brand?.toLowerCase() === selectedBrand.toLowerCase()
+      );
+    }
+
+    return filtered;
+  }, [products, selectedCategory, selectedBrand]);
 
   if (loading) {
     return (
@@ -144,7 +178,6 @@ export default function ClientCatalog() {
         <div className="bg-white rounded-lg shadow-md p-4 sticky top-24">
           <h2 className="text-lg font-bold text-gray-800 mb-4">Categorías</h2>
 
-          {/* Todas */}
           <button
             onClick={() => setSelectedCategory(null)}
             className={`w-full text-left px-4 py-3 rounded-lg mb-2 transition ${selectedCategory === null
@@ -161,7 +194,6 @@ export default function ClientCatalog() {
             </div>
           </button>
 
-          {/* Categorías dinámicas */}
           {categoriesWithCount.map((cat) => (
             <button
               key={cat.name}
@@ -183,7 +215,46 @@ export default function ClientCatalog() {
         </div>
       </aside>
 
-      {/* ✅ MENÚ DE CATEGORÍAS - MOBILE (desplegable) */}
+      {/* ✅ MENÚ LATERAL DE MARCAS - DESKTOP */}
+      <aside className="hidden lg:block w-64 shrink-0">
+        <div className="bg-white rounded-lg shadow-md p-4 sticky top-24">
+          <h2 className="text-lg font-bold text-gray-800 mb-4">Marcas</h2>
+
+          <button
+            onClick={() => setSelectedBrand(null)}
+            className={`w-full text-left px-4 py-3 rounded-lg mb-2 transition ${selectedBrand === null
+                ? "bg-green-600 text-white font-semibold"
+                : "bg-gray-50 text-gray-700 hover:bg-gray-100"
+              }`}
+          >
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <span>🏷️</span>
+                <span>Todas</span>
+              </span>
+              <span className="text-sm opacity-75">({products.length})</span>
+            </div>
+          </button>
+
+          {brandsWithCount.map((brand) => (
+            <button
+              key={brand.name}
+              onClick={() => setSelectedBrand(brand.name)}
+              className={`w-full text-left px-4 py-3 rounded-lg mb-2 transition ${selectedBrand === brand.name
+                  ? "bg-green-600 text-white font-semibold"
+                  : "bg-gray-50 text-gray-700 hover:bg-gray-100"
+                }`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="truncate">{brand.name}</span>
+                <span className="text-sm opacity-75">({brand.count})</span>
+              </div>
+            </button>
+          ))}
+        </div>
+      </aside>
+
+      {/* ✅ MENÚ DE CATEGORÍAS - MOBILE */}
       <div className="lg:hidden mb-4">
         <button
           onClick={() => setShowMobileMenu(!showMobileMenu)}
@@ -209,7 +280,6 @@ export default function ClientCatalog() {
 
         {showMobileMenu && (
           <div className="mt-2 bg-white rounded-lg shadow-md p-2">
-            {/* Todas */}
             <button
               onClick={() => {
                 setSelectedCategory(null);
@@ -229,7 +299,6 @@ export default function ClientCatalog() {
               </div>
             </button>
 
-            {/* Categorías */}
             {categoriesWithCount.map((cat) => (
               <button
                 key={cat.name}
@@ -257,11 +326,11 @@ export default function ClientCatalog() {
 
       {/* ✅ GRID DE PRODUCTOS */}
       <div className="flex-1">
-        {selectedCategory && (
+        {(selectedCategory || selectedBrand) && (
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-xl font-bold text-gray-800">
-              {categoriesWithCount.find((c) => c.name === selectedCategory)?.icon}{" "}
-              {selectedCategory}
+              {selectedCategory && categoriesWithCount.find((c) => c.name === selectedCategory)?.icon}{" "}
+              {selectedCategory || ""} {selectedBrand && `• ${selectedBrand}`}
             </h2>
             <span className="text-sm text-gray-500">
               {filteredProducts.length} producto{filteredProducts.length !== 1 ? "s" : ""}
@@ -273,7 +342,7 @@ export default function ClientCatalog() {
           <CatalogGrid products={filteredProducts} />
         ) : (
           <div className="text-center py-12 bg-white rounded-lg shadow-md">
-            <p className="text-gray-500">No hay productos en esta categoría</p>
+            <p className="text-gray-500">No hay productos disponibles</p>
           </div>
         )}
       </div>

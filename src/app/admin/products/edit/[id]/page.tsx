@@ -717,6 +717,46 @@ export default function EditProductPage() {
             </label>
           </div>
 
+          {/* ✅ SISTEMA DE VARIANTES */}
+          <div className="border-t pt-6">
+            <div className="flex items-center gap-3 mb-4">
+              <input
+                type="checkbox"
+                id="has_variants"
+                checked={hasVariants}
+                onChange={(e) => {
+                  setHasVariants(e.target.checked);
+                  if (!e.target.checked) {
+                    setVariants([]);
+                  }
+                }}
+                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <label
+                htmlFor="has_variants"
+                className="text-sm font-medium text-gray-700"
+              >
+                Este producto tiene variantes (color, talla, diseño)
+              </label>
+            </div>
+
+            {hasVariants && (
+              <VariantsManager
+                productSKU={formData.sku || ""}
+                variants={variants}
+                onAdd={(variant) => setVariants([...variants, variant])}
+                onEdit={(index, variant) => {
+                  const updated = [...variants];
+                  updated[index] = variant;
+                  setVariants(updated);
+                }}
+                onDelete={(index) => {
+                  setVariants(variants.filter((_, i) => i !== index));
+                }}
+              />
+            )}
+          </div>
+
 
           {/* Mensaje */}
           {message && (
