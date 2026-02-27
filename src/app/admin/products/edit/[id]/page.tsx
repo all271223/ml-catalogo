@@ -296,7 +296,7 @@ export default function EditProductPage() {
       // 3) Final: current (ordenado) + new (ordenado)
       const finalImages = [...currentImages, ...newImagePaths];
 
-      // 4) Update producto
+      // 4) Update producto (antes de variantes)
       const discountValue = formData.discount_percent
         ? parseFloat(formData.discount_percent)
         : null;
@@ -312,17 +312,80 @@ export default function EditProductPage() {
             : null,
           price: calculatedPrice,
           discount_percent: discountValue,
-          stock: parseInt(formData.stock),
+          stock: hasVariants ? 0 : parseInt(formData.stock) || 0, // Temporal
           barcode: formData.barcode || null,
           sku: formData.sku || null,
           store: formData.store || null,
-          category: formData.category || null, // ✅ NUEVA LÍNEA
+          category: formData.category || null,
           image_path: finalImages.length > 0 ? finalImages : null,
           is_visible: formData.is_visible,
+          has_variants: hasVariants,
         })
         .eq("id", productId);
 
       if (error) throw error;
+
+      // ✅ GUARDAR VARIANTES Y RECALCULAR STOCK
+      if (hasVariants) {
+        // 1) Eliminar variantes existentes
+        const { error: deleteErr } = await supabasePublic
+          .from("product_variants")
+          .delete()
+          .eq("product_id", productId);
+        if (deleteErr) throw deleteErr;
+
+        // 2) Insertar nuevas variantes si existen
+        if (variants.length > 0) {
+          const variantsToInsert = variants.map((v) => ({
+            product_id: productId,
+            sku: v.sku,
+            barcode: v.barcode || null,
+            attributes: v.attributes,
+            stock: v.stock ?? 0,
+            is_available: true,
+            variant_images: null,
+          }));
+
+          const { error: variantError } = await supabasePublic
+            .from("product_variants")
+            .insert(variantsToInsert);
+
+          if (variantError) throw variantError;
+        }
+
+        // 3) ✅ RE-CALCULAR stock total desde product_variants y actualizar product
+        const { data: variantRows, error: variantFetchErr } = await supabasePublic
+          .from("product_variants")
+          .select("stock")
+          .eq("product_id", productId);
+
+        if (variantFetchErr) throw variantFetchErr;
+
+        const totalStock =
+          (variantRows && variantRows.reduce((s: number, r: any) => s + (r.stock || 0), 0)) ||
+          0;
+
+        const { error: updateStockErr } = await supabasePublic
+          .from("products")
+          .update({ stock: totalStock })
+          .eq("id", productId);
+
+        if (updateStockErr) throw updateStockErr;
+      } else {
+        // Si se desactivaron las variantes, eliminarlas y actualizar stock con el valor del formulario
+        const { error: deleteErr2 } = await supabasePublic
+          .from("product_variants")
+          .delete()
+          .eq("product_id", productId);
+        if (deleteErr2) throw deleteErr2;
+
+        // Actualizar stock padre con el valor del input
+        const { error: updateParentErr } = await supabasePublic
+          .from("products")
+          .update({ stock: parseInt(formData.stock) || 0 })
+          .eq("id", productId);
+        if (updateParentErr) throw updateParentErr;
+      }
 
       setMessage("Producto actualizado exitosamente");
       setTimeout(() => router.push("/admin/products"), 1500);

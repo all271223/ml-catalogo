@@ -82,7 +82,18 @@ export default function ClientCatalog() {
         setErrorMsg(error.message);
         setProducts([]);
       } else {
-        setProducts((data ?? []) as CatalogProduct[]);
+        const allData = data ?? [];
+        const filtered = allData.filter((p) => {
+          // Producto tiene stock directo
+          if (p.stock > 0) return true;
+
+          // Producto tiene variantes (puede ser true, 1, "true", etc)
+          if (p.has_variants) return true;
+
+          return false;
+        });
+
+        setProducts(filtered as CatalogProduct[]);
       }
 
       setLoading(false);
@@ -147,7 +158,7 @@ export default function ClientCatalog() {
 
     if (selectedBrand) {
       // ✅ SIMPLE: Comparar ambas en minúsculas
-      filtered = filtered.filter((p) => 
+      filtered = filtered.filter((p) =>
         p.brand?.toLowerCase() === selectedBrand.toLowerCase()
       );
     }
@@ -181,8 +192,8 @@ export default function ClientCatalog() {
           <button
             onClick={() => setSelectedCategory(null)}
             className={`w-full text-left px-4 py-3 rounded-lg mb-2 transition ${selectedCategory === null
-                ? "bg-blue-600 text-white font-semibold"
-                : "bg-gray-50 text-gray-700 hover:bg-gray-100"
+              ? "bg-blue-600 text-white font-semibold"
+              : "bg-gray-50 text-gray-700 hover:bg-gray-100"
               }`}
           >
             <div className="flex items-center justify-between">
@@ -199,8 +210,8 @@ export default function ClientCatalog() {
               key={cat.name}
               onClick={() => setSelectedCategory(cat.name)}
               className={`w-full text-left px-4 py-3 rounded-lg mb-2 transition ${selectedCategory === cat.name
-                  ? "bg-blue-600 text-white font-semibold"
-                  : "bg-gray-50 text-gray-700 hover:bg-gray-100"
+                ? "bg-blue-600 text-white font-semibold"
+                : "bg-gray-50 text-gray-700 hover:bg-gray-100"
                 }`}
             >
               <div className="flex items-center justify-between">
@@ -223,8 +234,8 @@ export default function ClientCatalog() {
           <button
             onClick={() => setSelectedBrand(null)}
             className={`w-full text-left px-4 py-3 rounded-lg mb-2 transition ${selectedBrand === null
-                ? "bg-green-600 text-white font-semibold"
-                : "bg-gray-50 text-gray-700 hover:bg-gray-100"
+              ? "bg-green-600 text-white font-semibold"
+              : "bg-gray-50 text-gray-700 hover:bg-gray-100"
               }`}
           >
             <div className="flex items-center justify-between">
@@ -241,8 +252,8 @@ export default function ClientCatalog() {
               key={brand.name}
               onClick={() => setSelectedBrand(brand.name)}
               className={`w-full text-left px-4 py-3 rounded-lg mb-2 transition ${selectedBrand === brand.name
-                  ? "bg-green-600 text-white font-semibold"
-                  : "bg-gray-50 text-gray-700 hover:bg-gray-100"
+                ? "bg-green-600 text-white font-semibold"
+                : "bg-gray-50 text-gray-700 hover:bg-gray-100"
                 }`}
             >
               <div className="flex items-center justify-between">
@@ -286,8 +297,8 @@ export default function ClientCatalog() {
                 setShowMobileMenu(false);
               }}
               className={`w-full text-left px-4 py-3 rounded-lg mb-1 transition ${selectedCategory === null
-                  ? "bg-blue-600 text-white font-semibold"
-                  : "bg-gray-50 text-gray-700"
+                ? "bg-blue-600 text-white font-semibold"
+                : "bg-gray-50 text-gray-700"
                 }`}
             >
               <div className="flex items-center justify-between">
@@ -307,8 +318,8 @@ export default function ClientCatalog() {
                   setShowMobileMenu(false);
                 }}
                 className={`w-full text-left px-4 py-3 rounded-lg mb-1 transition ${selectedCategory === cat.name
-                    ? "bg-blue-600 text-white font-semibold"
-                    : "bg-gray-50 text-gray-700"
+                  ? "bg-blue-600 text-white font-semibold"
+                  : "bg-gray-50 text-gray-700"
                   }`}
               >
                 <div className="flex items-center justify-between">
