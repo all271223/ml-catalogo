@@ -2,7 +2,7 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
-import Image from "next/image"; // ✅ NUEVA LÍNEA
+import Image from "next/image";
 import { useCart } from "./CartContext";
 import { imagePublicUrls } from "../lib/images";
 import { supabasePublic } from "../lib/supabasePublic";
@@ -93,8 +93,21 @@ export default function ProductModal({
   const canAdd = currentStock > 0 && qty > 0 && qty <= currentStock;
   const needsVariantSelection = p.has_variants && !selectedVariant;
 
-  const hasDiscount = p.original_price && p.original_price > (p.price || 0);
-  const savings = hasDiscount ? (p.original_price || 0) - (p.price || 0) : 0;
+  // ✅ Calcular precio a mostrar (variante o producto)
+  const displayPrice = selectedVariant?.price || p.price || 0;
+  
+  const displayOriginalPrice = useMemo(() => {
+    if (selectedVariant?.price && p.original_price && p.price) {
+      // Si la variante tiene precio y el producto tiene descuento,
+      // calcular el precio original proporcional
+      const discountMultiplier = p.price / p.original_price;
+      return selectedVariant.price / discountMultiplier;
+    }
+    return p.original_price || 0;
+  }, [selectedVariant, p.price, p.original_price]);
+
+  const hasDiscount = displayOriginalPrice > displayPrice;
+  const savings = hasDiscount ? displayOriginalPrice - displayPrice : 0;
 
   return (
     <>
@@ -192,11 +205,11 @@ export default function ProductModal({
                 {hasDiscount ? (
                   <div className="space-y-1.5">
                     <div className="text-[28px] sm:text-[32px] font-semibold text-gray-900">
-                      ${Intl.NumberFormat("es-CL").format(Number(p.price) || 0)}
+                      ${Intl.NumberFormat("es-CL").format(displayPrice)}
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <span className="text-gray-400 line-through">
-                        ${Intl.NumberFormat("es-CL").format(Number(p.original_price))}
+                        ${Intl.NumberFormat("es-CL").format(displayOriginalPrice)}
                       </span>
                       <span className="text-emerald-600 font-medium">
                         Ahorras ${Intl.NumberFormat("es-CL").format(savings)}
@@ -205,7 +218,7 @@ export default function ProductModal({
                   </div>
                 ) : (
                   <div className="text-[28px] sm:text-[32px] font-semibold text-gray-900">
-                    ${Intl.NumberFormat("es-CL").format(Number(p.price) || 0)}
+                    ${Intl.NumberFormat("es-CL").format(displayPrice)}
                   </div>
                 )}
               </div>
@@ -300,12 +313,12 @@ export default function ProductModal({
                       if (canAdd) {
                         if (p.has_variants && selectedVariant) {
                           addItem(
-                            { id: p.id, name: p.name, price: p.price },
+                            { id: p.id, name: p.name, price: displayPrice },
                             qty,
                             { variantId: selectedVariant.id, attributes: selectedVariant.attributes }
                           );
                         } else {
-                          addItem({ id: p.id, name: p.name, price: p.price }, qty);
+                          addItem({ id: p.id, name: p.name, price: displayPrice }, qty);
                         }
                         onClose();
                       }
