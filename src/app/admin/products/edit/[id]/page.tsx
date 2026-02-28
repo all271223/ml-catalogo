@@ -342,6 +342,7 @@ export default function EditProductPage() {
             barcode: v.barcode || null,
             attributes: v.attributes,
             stock: v.stock ?? 0,
+            price: v.price || null, // ✅ NUEVA LÍNEA
             is_available: true,
             variant_images: null,
           }));

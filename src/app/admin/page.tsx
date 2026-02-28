@@ -37,20 +37,20 @@ export default function AdminPage() {
   }, []);
 
   useEffect(() => {
-  const original = parseFloat(formData.original_price);
-  const discount = parseFloat(formData.discount_percent);
-  
-  if (original > 0 && discount >= 0 && discount <= 100) {
-    const salePrice = original - (original * (discount / 100));
-    const rounded = Math.max(1000, Math.round(salePrice / 1000) * 1000);
-    setCalculatedPrice(rounded);
-  } else if (original > 0 && !discount) {
-    const rounded = Math.max(1000, Math.round(original / 1000) * 1000);
-    setCalculatedPrice(rounded);
-  } else {
-    setCalculatedPrice(0);
-  }
-}, [formData.original_price, formData.discount_percent]);
+    const original = parseFloat(formData.original_price);
+    const discount = parseFloat(formData.discount_percent);
+
+    if (original > 0 && discount >= 0 && discount <= 100) {
+      const salePrice = original - (original * (discount / 100));
+      const rounded = Math.max(1000, Math.round(salePrice / 1000) * 1000);
+      setCalculatedPrice(rounded);
+    } else if (original > 0 && !discount) {
+      const rounded = Math.max(1000, Math.round(original / 1000) * 1000);
+      setCalculatedPrice(rounded);
+    } else {
+      setCalculatedPrice(0);
+    }
+  }, [formData.original_price, formData.discount_percent]);
 
   const checkUser = async () => {
     const { data: { user } } = await supabasePublic.auth.getUser();
@@ -68,14 +68,14 @@ export default function AdminPage() {
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    
+
     if (files.length > 10) {
       setMessage("Máximo 10 imágenes por producto");
       return;
     }
-    
+
     setImageFiles(files);
-    
+
     const previews: string[] = [];
     files.forEach((file) => {
       const reader = new FileReader();
@@ -190,6 +190,7 @@ export default function AdminPage() {
               barcode: variant.barcode || null,
               attributes: variant.attributes,
               stock: variant.stock,
+              price: variant.price || null, // ✅ NUEVA LÍNEA
               is_available: true,
               variant_images: variantImagePaths.length > 0 ? variantImagePaths : null,
             });
@@ -241,7 +242,7 @@ export default function AdminPage() {
             <h1 className="text-3xl font-bold mb-2">Panel de Administración</h1>
             <p className="text-gray-600">Crear nuevo producto</p>
           </div>
-          
+
           <div className="flex flex-col sm:flex-row gap-3">
             <button
               onClick={() => router.push("/admin/products")}
@@ -258,7 +259,7 @@ export default function AdminPage() {
               <span>📱</span>
               <span>Escáner de stock</span>
             </button>
-            
+
             <button
               onClick={handleLogout}
               className="px-4 py-2 text-sm text-red-600 hover:text-red-800 font-medium"
@@ -479,7 +480,7 @@ export default function AdminPage() {
             <label className="block text-sm font-medium text-gray-700 mb-4">
               Imágenes del producto (máximo 10)
             </label>
-            
+
             <input
               type="file"
               accept="image/*"
@@ -487,7 +488,7 @@ export default function AdminPage() {
               onChange={handleImageChange}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
-            
+
             {imagePreviews.length > 0 && (
               <div className="mt-4">
                 <p className="text-sm text-gray-600 mb-3">
@@ -496,7 +497,7 @@ export default function AdminPage() {
                     💡 Arrastra para reordenar (la primera es la principal)
                   </span>
                 </p>
-                
+
                 <div className="grid grid-cols-5 gap-2">
                   {imagePreviews.map((preview, idx) => (
                     <div
@@ -514,16 +515,16 @@ export default function AdminPage() {
                         e.preventDefault();
                         const draggedIdx = parseInt(e.dataTransfer.getData("text/html"));
                         if (draggedIdx === idx) return;
-                        
+
                         const newPreviews = [...imagePreviews];
                         const newFiles = [...imageFiles];
-                        
+
                         const [draggedPreview] = newPreviews.splice(draggedIdx, 1);
                         const [draggedFile] = newFiles.splice(draggedIdx, 1);
-                        
+
                         newPreviews.splice(idx, 0, draggedPreview);
                         newFiles.splice(idx, 0, draggedFile);
-                        
+
                         setImagePreviews(newPreviews);
                         setImageFiles(newFiles);
                       }}
@@ -534,11 +535,11 @@ export default function AdminPage() {
                         alt={`Preview ${idx + 1}`}
                         className="w-full h-full object-cover pointer-events-none"
                       />
-                      
+
                       <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[9px] text-center py-0.5 pointer-events-none">
                         {idx === 0 ? '📌 Principal' : `Img ${idx + 1}`}
                       </div>
-                      
+
                       <button
                         type="button"
                         onClick={() => handleRemoveImage(idx)}
@@ -555,11 +556,10 @@ export default function AdminPage() {
 
           {message && (
             <div
-              className={`p-4 rounded-lg ${
-                message.includes("exitosamente")
+              className={`p-4 rounded-lg ${message.includes("exitosamente")
                   ? "bg-green-50 text-green-800"
                   : "bg-red-50 text-red-800"
-              }`}
+                }`}
             >
               {message}
             </div>

@@ -15,12 +15,13 @@ export type ProductVariant = {
   product_id: string;
   sku: string | null;
   barcode: string | null;
-  attributes: VariantAttributes;
+  attributes: Record<string, string>;
   stock: number;
+  price?: number | null; // ✅ NUEVA LÍNEA
   is_available: boolean;
   variant_images: string[] | null;
-  created_at: string;
-  updated_at: string;
+  created_at?: string;
+  updated_at?: string;
 };
 
 // ✅ Generar SKU automático para variante

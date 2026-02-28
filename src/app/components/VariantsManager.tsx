@@ -7,6 +7,7 @@ export type VariantFormData = {
   id?: string; // Para edición
   attributes: VariantAttributes;
   stock: number;
+  price?: number; // ✅ NUEVA LÍNEA
   barcode: string;
   sku: string;
   variant_images: File[];
@@ -44,6 +45,7 @@ export default function VariantsManager({
     setFormData({
       attributes: {},
       stock: 0,
+      price: undefined, // ✅ NUEVA LÍNEA
       barcode: "",
       sku: "",
       variant_images: [],
@@ -55,13 +57,14 @@ export default function VariantsManager({
   // Auto-generar SKU cuando cambian los atributos
   const handleAttributeChange = (key: string, value: string) => {
     const newAttributes = { ...formData.attributes, [key]: value };
-    
+
     // Generar SKU automático
     const parts = [productSKU];
     if (newAttributes.color) parts.push(newAttributes.color.toUpperCase());
     if (newAttributes.talla) parts.push(newAttributes.talla.toUpperCase());
     if (newAttributes.diseño) parts.push(newAttributes.diseño.toUpperCase());
-    
+    if (newAttributes.edicion) parts.push(newAttributes.edicion.toUpperCase()); // ✅
+
     setFormData({
       ...formData,
       attributes: newAttributes,
@@ -116,7 +119,7 @@ export default function VariantsManager({
           </h4>
 
           {/* ATRIBUTOS */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">
                 Color
@@ -155,6 +158,20 @@ export default function VariantsManager({
                 placeholder="Ej: Calavera"
               />
             </div>
+
+            {/* ✅ NUEVO CAMPO: Edición */}
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">
+                Edición
+              </label>
+              <input
+                type="text"
+                value={formData.attributes.edicion || ""}
+                onChange={(e) => handleAttributeChange("edicion", e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                placeholder="Ej: Mamá, Papá"
+              />
+            </div>
           </div>
 
           {/* STOCK Y BARCODE */}
@@ -174,6 +191,27 @@ export default function VariantsManager({
                 className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 placeholder="10"
               />
+            </div>
+            {/* ✅ PRECIO */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Precio (opcional)
+              </label>
+              <input
+                type="number"
+                value={formData.price || ""}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    price: e.target.value ? parseFloat(e.target.value) : undefined
+                  })
+                }
+                placeholder="Dejar vacío para usar precio del producto"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Si no se especifica, se usará el precio del producto principal
+              </p>
             </div>
 
             <div>
