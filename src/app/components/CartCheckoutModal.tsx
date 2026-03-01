@@ -89,7 +89,11 @@ export default function CartCheckoutModal({
                           <div className="mt-0.5 text-xs text-purple-600 font-medium">
                             {Object.entries(it.variant.attributes)
                               .filter(([_, v]) => v)
-                              .map(([k, v]) => `${k}: ${v}`)
+                              .map(([k, v]) => {
+                                // Capitalizar primera letra de la clave
+                                const keyCapitalized = k.charAt(0).toUpperCase() + k.slice(1);
+                                return `${keyCapitalized}: ${v}`;
+                              })
                               .join(", ")}
                           </div>
                         )}

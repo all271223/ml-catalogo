@@ -47,7 +47,8 @@ export default function ProductModal({
 
   // Handler que recibe la selección desde VariantSelector
   const handleVariantSelect = (variant: ProductVariant | null) => {
-        setSelectedVariant(variant);
+
+    setSelectedVariant(variant);
   };
 
   // handler limpio para añadir al carrito
@@ -319,9 +320,7 @@ export default function ProductModal({
                             <p className="text-sm font-medium text-gray-700">
                               Selección: <span className="text-purple-700">{formatVariantAttributes(selectedVariant.attributes)}</span>
                             </p>
-                            <p className="text-xs text-gray-600 mt-1">
-                              Stock: <span className="font-semibold">{selectedVariant.stock} disponibles</span>
-                            </p>
+                            
                           </div>
                         </div>
                       )}
@@ -336,7 +335,7 @@ export default function ProductModal({
               {p.description && (
                 <div>
                   <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-2 sm:mb-3">Descripción del producto</h3>
-                  <div className="bg-gray-50 rounded-xl p-3 sm:p-5 border border-gray-200">
+                  <div className="bg-gray-50 rounded-xl p-3 sm:p-5 border border-gray-200 max-h-64 overflow-y-auto">
                     <p className="text-xs sm:text-sm text-gray-700 leading-relaxed whitespace-pre-line">{p.description}</p>
                   </div>
                 </div>

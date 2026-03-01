@@ -16,38 +16,39 @@ type Product = {
   store?: string | null;
   sku?: string | null;
   barcode?: string | null;
-  has_variants?: boolean; // ✅ NUEVO
+  has_variants?: boolean;
 };
 
-export default function ProductCard({ 
-  p, 
-  onOpenModal 
-}: { 
+export default function ProductCard({
+  p,
+  onOpenModal,
+}: {
   p: Product;
   onOpenModal?: () => void;
 }) {
   const { addItem } = useCart();
   const src = imagePublicUrl(p.image_url);
-  const canAdd = p.stock > 0 && !p.has_variants; // ✅ No agregar directo si tiene variantes
-  
+  const canAdd = p.stock > 0 && !p.has_variants;
+
   const hasDiscount = p.original_price && p.original_price > (p.price || 0);
   const savings = hasDiscount ? (p.original_price || 0) - (p.price || 0) : 0;
 
   return (
-    <article className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition hover:shadow-lg hover:border-gray-300">
-      {/* Imagen */}
-      <div 
-        className="relative aspect-square w-full overflow-hidden bg-white cursor-pointer p-4"
-        onClick={onOpenModal}
+    /* article ahora es un flex column que ocupa toda la altura disponible (h-full).
+       Esto evita que tarjetas con distinto contenido tengan distintas alturas. */
+    <article className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition hover:shadow-lg hover:border-gray-300 flex flex-col h-full">
+      {/* Imagen con altura fija */}
+      <div
+        className="relative w-full h-64 bg-white rounded-t-2xl overflow-hidden cursor-pointer flex items-center justify-center p-4"
+onClick={onOpenModal}
       >
         <img
           src={src}
           alt={p.name}
           loading="lazy"
-          className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
+          className="max-h-full max-w-full object-contain transition-transform duration-300 group-hover:scale-105"
         />
-        
-        {/* Badge discreto - presente pero no protagonista */}
+
         {hasDiscount && p.discount_percent && (
           <div className="absolute top-3 right-3">
             <span className="inline-flex items-center rounded-md bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700">
@@ -57,22 +58,22 @@ export default function ProductCard({
         )}
       </div>
 
-      {/* Contenido */}
-      <div className="p-4 space-y-3">
+      {/* Contenido: flex-1 para rellenar altura restante */}
+      <div className="p-4 space-y-3 flex-1 flex flex-col">
         {/* Marca */}
         {p.brand && (
           <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">{p.brand}</div>
         )}
 
         {/* Nombre - clickable */}
-        <h3 
+        <h3
           className="line-clamp-2 text-base font-semibold text-gray-900 cursor-pointer hover:text-blue-600 transition min-h-[48px]"
           onClick={onOpenModal}
         >
           {p.name}
         </h3>
 
-        {/* ✅ NUEVO: Badge si tiene variantes */}
+        {/* Badge si tiene variantes */}
         {p.has_variants && (
           <div className="flex items-center gap-1.5 text-xs font-medium text-purple-700 bg-purple-50 rounded-md px-2 py-1">
             <span>🎨</span>
@@ -90,23 +91,19 @@ export default function ProductCard({
           <div className="flex items-center gap-1.5 text-xs font-medium text-orange-700 bg-orange-50 rounded-md px-2 py-1">
             <span>⚠️</span>
             <span>
-              {p.stock === 1
-                ? "Última unidad disponible"
-                : `Quedan ${p.stock} unidades`}
+              {p.stock === 1 ? "Última unidad disponible" : `Quedan ${p.stock} unidades`}
             </span>
           </div>
         ) : null}
 
-        {/* PRECIO ELEGANTE - Jerarquía clara */}
+        {/* Precio */}
         <div className="space-y-1">
           {hasDiscount ? (
             <>
-              {/* Precio final - protagonista pero elegante */}
               <div className="text-[26px] font-semibold text-gray-900">
                 ${Intl.NumberFormat("es-CL").format(Number(p.price) || 0)}
               </div>
-              
-              {/* Precio original + ahorro - secundarios */}
+
               <div className="flex items-center gap-2 text-sm">
                 <span className="text-gray-400 line-through">
                   ${Intl.NumberFormat("es-CL").format(Number(p.original_price))}
@@ -123,34 +120,34 @@ export default function ProductCard({
           )}
         </div>
 
-        {/* CTA - Full width pero no exagerado */}
-        {/* ✅ MODIFICADO: Si tiene variantes, abrir modal para seleccionar */}
-        {p.has_variants ? (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onOpenModal?.();
-            }}
-            className="w-full rounded-xl px-6 py-2.5 text-sm font-medium transition-all duration-200 bg-purple-600 text-white hover:bg-purple-700 shadow-sm hover:shadow-md"
-          >
-            Ver opciones
-          </button>
-        ) : (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              addItem(p);
-            }}
-            disabled={!canAdd}
-            className={`w-full rounded-xl px-6 py-2.5 text-sm font-medium transition-all duration-200 ${
-              canAdd
-                ? "bg-gray-900 text-white hover:bg-black shadow-sm hover:shadow-md"
-                : "cursor-not-allowed bg-gray-200 text-gray-500"
-            }`}
-          >
-            {canAdd ? "Agregar al carrito" : "Sin stock"}
-          </button>
-        )}
+        {/* CTA: mt-auto para pegar abajo siempre */}
+        <div className="mt-auto">
+          {p.has_variants ? (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenModal?.();
+              }}
+              className="w-full rounded-xl px-6 py-2.5 text-sm font-medium transition-all duration-200 bg-purple-600 text-white hover:bg-purple-700 shadow-sm hover:shadow-md"
+            >
+              Ver opciones
+            </button>
+          ) : (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                addItem(p);
+              }}
+              disabled={!canAdd}
+              className={`w-full rounded-xl px-6 py-2.5 text-sm font-medium transition-all duration-200 ${canAdd
+                  ? "bg-gray-900 text-white hover:bg-black shadow-sm hover:shadow-md"
+                  : "cursor-not-allowed bg-gray-200 text-gray-500"
+                }`}
+            >
+              {canAdd ? "Agregar al carrito" : "Sin stock"}
+            </button>
+          )}
+        </div>
       </div>
     </article>
   );
