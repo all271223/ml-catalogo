@@ -41,7 +41,7 @@ export default function CartCheckoutModal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
+    <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/50 p-4">
       <div className="w-full max-w-xl overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/5">
         {/* Header */}
         <div className="flex items-start justify-between gap-3 border-b px-5 py-4">
