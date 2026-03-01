@@ -6,9 +6,12 @@ import Image from "next/image";
 import { useCart } from "./CartContext";
 import { imagePublicUrls } from "../lib/images";
 import { supabasePublic } from "../lib/supabasePublic";
-import { ProductVariant, formatVariantAttributes } from "../lib/variant-helpers";
+import {
+  ProductVariant,
+  formatVariantAttributes,
+  extractUniqueAttributes,
+} from "../lib/variant-helpers";
 import VariantSelector from "./VariantSelector";
-
 
 type Product = {
   id: string;
@@ -42,19 +45,85 @@ export default function ProductModal({
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
   const [loadingVariants, setLoadingVariants] = useState(false);
 
+  // Handler que recibe la selección desde VariantSelector
+  const handleVariantSelect = (variant: ProductVariant | null) => {
+        setSelectedVariant(variant);
+  };
+
+  // handler limpio para añadir al carrito
+  const handleAddToCart = () => {
+    // Si es necesario seleccionar variante y no hay seleccionada
+    if (p?.has_variants && !selectedVariant) {
+      alert("Por favor selecciona una opción (color, talla o diseño)");
+      return;
+    }
+
+    // determinar stock actual y si se puede agregar
+    const currentStock =
+      p?.has_variants && selectedVariant ? selectedVariant.stock : p?.stock ?? 0;
+    const canAddLocal = currentStock > 0 && qty > 0 && qty <= currentStock;
+    if (!canAddLocal) return;
+
+    // Si hay variante seleccionada: crear item con id único por variante
+    if (p?.has_variants && selectedVariant) {
+      const variantLabel = formatVariantAttributes(selectedVariant.attributes); // ✅ NUEVA LÍNEA
+      const item = {
+        id: `${p.id}::${selectedVariant.id}`, // id único por variante
+        name: `${p.name}${variantLabel ? ` - ${variantLabel}` : ""}`, // ✅ LÍNEA MODIFICADA
+        price: (selectedVariant.price ?? p.price ?? 0) as number,
+        sku: (selectedVariant.sku ?? p.sku ?? null) as string | null,
+      };
+
+      // Mantener la firma addItem(item, qty, meta) que usabas antes
+      addItem(
+        item,
+        qty,
+        {
+          variantId: selectedVariant.id,
+          attributes: selectedVariant.attributes || {},
+        }
+      );
+    } else if (p) {
+      // Producto sin variantes
+      const item = {
+        id: p.id,
+        name: p.name,
+        price: (p.price ?? 0) as number,
+        sku: (p.sku ?? null) as string | null,
+      };
+
+      addItem(item, qty);
+    }
+
+    onClose();
+  };
+
   useEffect(() => {
-    document.body.style.overflow = 'hidden';
+    document.body.style.overflow = "hidden";
     return () => {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = "unset";
     };
   }, []);
 
+  // cargar variantes si corresponde
   useEffect(() => {
     if (p?.has_variants) {
       loadVariants();
+    } else {
+      // si el producto no tiene variantes, asegurarnos de limpiar
+      setVariants([]);
+      setSelectedVariant(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [p?.has_variants, p?.id]);
+
+  // limpiar selectedVariant si dejó de existir en la lista de variantes
+  useEffect(() => {
+    if (selectedVariant && variants.length > 0) {
+      const exists = variants.some((v) => v.id === selectedVariant.id);
+      if (!exists) setSelectedVariant(null);
+    }
+  }, [variants, selectedVariant]);
 
   const loadVariants = async () => {
     if (!p) return;
@@ -86,20 +155,16 @@ export default function ProductModal({
 
   if (!p) return null;
 
-  const currentStock = p.has_variants && selectedVariant
-    ? selectedVariant.stock
-    : p.stock;
+  const currentStock = p.has_variants && selectedVariant ? selectedVariant.stock : p.stock;
 
   const canAdd = currentStock > 0 && qty > 0 && qty <= currentStock;
   const needsVariantSelection = p.has_variants && !selectedVariant;
 
-  // ✅ Calcular precio a mostrar (variante o producto)
-  const displayPrice = selectedVariant?.price || p.price || 0;
-  
+  // precio a mostrar (variante o padre)
+  const displayPrice = selectedVariant?.price ?? p.price ?? 0;
+
   const displayOriginalPrice = useMemo(() => {
     if (selectedVariant?.price && p.original_price && p.price) {
-      // Si la variante tiene precio y el producto tiene descuento,
-      // calcular el precio original proporcional
       const discountMultiplier = p.price / p.original_price;
       return selectedVariant.price / discountMultiplier;
     }
@@ -131,17 +196,17 @@ export default function ProductModal({
 
           {/* Body */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8 p-4 sm:p-6 overflow-y-auto flex-1">
-            {/* Columna izquierda */}
+            {/* Column left */}
             <div className="flex flex-col gap-3 sm:gap-4">
-              {/* Imagen principal */}
-              <div className="relative rounded-xl bg-white flex items-center justify-center" style={{ height: '400px' }}>
+              {/* Main image */}
+              <div className="relative rounded-xl bg-white flex items-center justify-center" style={{ height: "400px" }}>
                 <Image
                   src={images[currentImageIndex]}
                   alt={`${p.name} - Imagen ${currentImageIndex + 1}`}
                   width={500}
                   height={500}
                   className="w-full h-full rounded-lg object-contain cursor-pointer hover:opacity-90 transition"
-                  style={{ maxHeight: '500px' }}
+                  style={{ maxHeight: "500px" }}
                   onClick={() => setZoomedImage(images[currentImageIndex])}
                   unoptimized
                 />
@@ -157,7 +222,7 @@ export default function ProductModal({
                 {images.length > 1 && (
                   <>
                     <button
-                      onClick={() => setCurrentImageIndex((prev) => prev === 0 ? images.length - 1 : prev - 1)}
+                      onClick={() => setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1))}
                       className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 bg-white/95 hover:bg-white rounded-full p-2 sm:p-3 shadow-lg transition"
                     >
                       <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -165,7 +230,7 @@ export default function ProductModal({
                       </svg>
                     </button>
                     <button
-                      onClick={() => setCurrentImageIndex((prev) => prev === images.length - 1 ? 0 : prev + 1)}
+                      onClick={() => setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1))}
                       className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 bg-white/95 hover:bg-white rounded-full p-2 sm:p-3 shadow-lg transition"
                     >
                       <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -189,10 +254,7 @@ export default function ProductModal({
                     <button
                       key={idx}
                       onClick={() => setCurrentImageIndex(idx)}
-                      className={`aspect-square rounded-lg overflow-hidden border-2 transition ${idx === currentImageIndex
-                        ? "border-blue-500 ring-2 ring-blue-200"
-                        : "border-gray-200 hover:border-gray-400"
-                        }`}
+                      className={`aspect-square rounded-lg overflow-hidden border-2 transition ${idx === currentImageIndex ? "border-blue-500 ring-2 ring-blue-200" : "border-gray-200 hover:border-gray-400"}`}
                     >
                       <Image src={img} alt={`Miniatura ${idx + 1}`} width={100} height={100} className="w-full h-full object-cover" unoptimized />
                     </button>
@@ -200,7 +262,7 @@ export default function ProductModal({
                 </div>
               )}
 
-              {/* Precio */}
+              {/* Price */}
               <div className="bg-white rounded-xl border-2 border-gray-200 p-4 sm:p-5">
                 {hasDiscount ? (
                   <div className="space-y-1.5">
@@ -224,15 +286,11 @@ export default function ProductModal({
               </div>
             </div>
 
-            {/* Columna derecha */}
+            {/* Column right */}
             <div className="flex flex-col gap-4">
-              {/* Marca y Stock */}
+              {/* Brand and stock */}
               <div className="flex items-center justify-between pb-3 sm:pb-4 border-b border-gray-200">
-                {p.brand && (
-                  <div className="text-sm sm:text-base font-semibold text-gray-700">
-                    Marca: {p.brand}
-                  </div>
-                )}
+                {p.brand && <div className="text-sm sm:text-base font-semibold text-gray-700">Marca: {p.brand}</div>}
 
                 {!p.has_variants && currentStock <= 3 && (
                   <span className="rounded-full px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold bg-orange-50 text-orange-700">
@@ -241,7 +299,7 @@ export default function ProductModal({
                 )}
               </div>
 
-              {/* Selector de variantes */}
+              {/* Variant selector */}
               {p.has_variants && (
                 <div className="bg-purple-50 rounded-xl border-2 border-purple-200 p-4">
                   <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
@@ -253,7 +311,7 @@ export default function ProductModal({
                     <div className="text-center py-8 text-gray-500 text-sm">Cargando opciones...</div>
                   ) : variants.length > 0 ? (
                     <>
-                      <VariantSelector variants={variants} onVariantSelect={setSelectedVariant} />
+                      <VariantSelector variants={variants} onVariantSelect={handleVariantSelect} />
 
                       {selectedVariant && (
                         <div className="mt-4 pt-4 border-t border-purple-200">
@@ -274,21 +332,17 @@ export default function ProductModal({
                 </div>
               )}
 
-              {/* Descripción */}
+              {/* Description */}
               {p.description && (
                 <div>
-                  <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-2 sm:mb-3">
-                    Descripción del producto
-                  </h3>
+                  <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-2 sm:mb-3">Descripción del producto</h3>
                   <div className="bg-gray-50 rounded-xl p-3 sm:p-5 border border-gray-200">
-                    <p className="text-xs sm:text-sm text-gray-700 leading-relaxed whitespace-pre-line">
-                      {p.description}
-                    </p>
+                    <p className="text-xs sm:text-sm text-gray-700 leading-relaxed whitespace-pre-line">{p.description}</p>
                   </div>
                 </div>
               )}
 
-              {/* Acciones */}
+              {/* Actions */}
               <div className="space-y-3 sm:space-y-4 mt-auto">
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
                   <div className="flex items-center gap-3">
@@ -304,25 +358,7 @@ export default function ProductModal({
                   </div>
 
                   <button
-                    onClick={() => {
-                      if (needsVariantSelection) {
-                        alert("Por favor selecciona una opción (color, talla o diseño)");
-                        return;
-                      }
-
-                      if (canAdd) {
-                        if (p.has_variants && selectedVariant) {
-                          addItem(
-                            { id: p.id, name: p.name, price: displayPrice },
-                            qty,
-                            { variantId: selectedVariant.id, attributes: selectedVariant.attributes }
-                          );
-                        } else {
-                          addItem({ id: p.id, name: p.name, price: displayPrice }, qty);
-                        }
-                        onClose();
-                      }
-                    }}
+                    onClick={handleAddToCart}
                     disabled={!canAdd || needsVariantSelection}
                     className={`flex-1 rounded-xl px-4 sm:px-6 py-3 text-sm sm:text-base font-medium transition-all ${canAdd && !needsVariantSelection
                       ? "bg-gray-900 text-white hover:bg-black shadow-md hover:shadow-lg"
@@ -333,21 +369,17 @@ export default function ProductModal({
                   </button>
                 </div>
 
-                <p className="text-center text-xs text-gray-500">
-                  Finaliza tu pedido desde el carrito por WhatsApp
-                </p>
+                <p className="text-center text-xs text-gray-500">Finaliza tu pedido desde el carrito por WhatsApp</p>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Modal de zoom */}
+      {/* Zoom modal */}
       {zoomedImage && (
         <div className="fixed inset-0 z-100 bg-black/95 flex items-center justify-center p-4" onClick={() => setZoomedImage(null)}>
-          <button onClick={() => setZoomedImage(null)} className="absolute top-4 right-4 text-white text-3xl sm:text-4xl hover:text-gray-300 transition z-10">
-            ✕
-          </button>
+          <button onClick={() => setZoomedImage(null)} className="absolute top-4 right-4 text-white text-3xl sm:text-4xl hover:text-gray-300 transition z-10">✕</button>
 
           <Image src={zoomedImage} alt="Zoom" width={1200} height={1200} className="max-w-full max-h-full object-contain" onClick={(e) => e.stopPropagation()} unoptimized />
 
@@ -388,11 +420,7 @@ export default function ProductModal({
           )}
 
           <p className="absolute bottom-4 text-white text-xs sm:text-sm text-center px-4">
-            {images.length > 1 ? (
-              <>Usa las flechas para navegar • Click fuera para cerrar</>
-            ) : (
-              <>Click fuera de la imagen para cerrar</>
-            )}
+            {images.length > 1 ? <>Usa las flechas para navegar • Click fuera para cerrar</> : <>Click fuera de la imagen para cerrar</>}
           </p>
         </div>
       )}

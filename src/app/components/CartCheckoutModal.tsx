@@ -22,6 +22,7 @@ export default function CartCheckoutModal({
         name: i.name,
         price: Number(i.price) || 0,
         qty: i.qty,
+        variant: i.variant, // ✅ INCLUIR VARIANTE
       })),
       Number(total) || 0
     );
@@ -84,6 +85,14 @@ export default function CartCheckoutModal({
                         <div className="truncate font-medium text-gray-900">
                           {it.name}
                         </div>
+                        {it.variant && (
+                          <div className="mt-0.5 text-xs text-purple-600 font-medium">
+                            {Object.entries(it.variant.attributes)
+                              .filter(([_, v]) => v)
+                              .map(([k, v]) => `${k}: ${v}`)
+                              .join(", ")}
+                          </div>
+                        )}
                         <div className="mt-0.5 text-xs text-gray-500">
                           Cantidad: {it.qty}
                         </div>

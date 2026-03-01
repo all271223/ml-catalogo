@@ -2,12 +2,15 @@
 
 export type WAItem = {
   name: string;
-  price: number; // en pesos
+  price: number;
   qty: number;
+  variant?: { // ✅ NUEVO
+    variantId: string;
+    attributes: Record<string, string | undefined>;
+  };
 };
 
 function normalizePhone(raw: string) {
-  // deja solo dígitos (ej: +56912345678 -> 56912345678)
   return (raw || "").replace(/[^\d]/g, "");
 }
 
@@ -24,7 +27,6 @@ function isMobileDevice() {
 export function buildWhatsAppMessage(items: WAItem[], total: number) {
   const phone = normalizePhone(process.env.NEXT_PUBLIC_WHATSAPP_PHONE || "");
   if (!phone) {
-    // fallback "seguro" para no romper
     return "#";
   }
 
@@ -37,7 +39,13 @@ export function buildWhatsAppMessage(items: WAItem[], total: number) {
     const price = Number(it.price) || 0;
     const qty = Number(it.qty) || 0;
     const lineTotal = price * qty;
-    lines.push(`• ${it.name} x${qty} — $${formatCLP(lineTotal)}`);
+    
+    // ✅ Incluir variante si existe
+    const variantText = it.variant
+      ? ` (${Object.values(it.variant.attributes).filter(Boolean).join(", ")})`
+      : "";
+    
+    lines.push(`• ${it.name}${variantText} x${qty} — $${formatCLP(lineTotal)}`);
   }
 
   lines.push("");
@@ -46,11 +54,9 @@ export function buildWhatsAppMessage(items: WAItem[], total: number) {
 
   const text = encodeURIComponent(lines.join("\n"));
 
-  // ✅ En móviles, este deep link evita el flujo “Compartir enlace”
   if (isMobileDevice()) {
     return `whatsapp://send?phone=${phone}&text=${text}`;
   }
 
-  // ✅ Desktop / fallback
   return `https://wa.me/${phone}?text=${text}`;
 }

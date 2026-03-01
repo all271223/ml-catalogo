@@ -12,9 +12,11 @@ export default function VariantSelector({ variants, onVariantSelect }: Props) {
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const [selectedTalla, setSelectedTalla] = useState<string | null>(null);
   const [selectedDiseño, setSelectedDiseño] = useState<string | null>(null);
+  const [selectedEdicion, setSelectedEdicion] = useState<string | null>(null); // ✅ NUEVO
 
-  // Extraer atributos únicos
-  const { colors, tallas, diseños } = extractUniqueAttributes(variants);
+  // Extraer atributos únicosediciones
+  const { colors, tallas, diseños, ediciones } = extractUniqueAttributes(variants); // ✅ ediciones
+  
 
   // Buscar variante seleccionada
   useEffect(() => {
@@ -22,6 +24,7 @@ export default function VariantSelector({ variants, onVariantSelect }: Props) {
     if (selectedColor) attributes.color = selectedColor;
     if (selectedTalla) attributes.talla = selectedTalla;
     if (selectedDiseño) attributes.diseño = selectedDiseño;
+    if (selectedEdicion) attributes.edicion = selectedEdicion; // ✅ NUEVO
 
     // Solo buscar si hay al menos un atributo seleccionado
     if (Object.keys(attributes).length > 0) {
@@ -30,7 +33,7 @@ export default function VariantSelector({ variants, onVariantSelect }: Props) {
     } else {
       onVariantSelect(null);
     }
-  }, [selectedColor, selectedTalla, selectedDiseño, variants, onVariantSelect]);
+  }, [selectedColor, selectedTalla, selectedDiseño, selectedEdicion, variants, onVariantSelect]); // ✅ selectedEdicion
 
   // Verificar si una combinación está disponible
   const isVariantAvailable = (attr: Record<string, string>) => {
@@ -51,6 +54,7 @@ export default function VariantSelector({ variants, onVariantSelect }: Props) {
               const testAttr: Record<string, string> = { color };
               if (selectedTalla) testAttr.talla = selectedTalla;
               if (selectedDiseño) testAttr.diseño = selectedDiseño;
+              if (selectedEdicion) testAttr.edicion = selectedEdicion;
               
               const available = isVariantAvailable(testAttr);
               const isSelected = selectedColor === color;
@@ -88,6 +92,7 @@ export default function VariantSelector({ variants, onVariantSelect }: Props) {
               const testAttr: Record<string, string> = { talla };
               if (selectedColor) testAttr.color = selectedColor;
               if (selectedDiseño) testAttr.diseño = selectedDiseño;
+              if (selectedEdicion) testAttr.edicion = selectedEdicion;
               
               const available = isVariantAvailable(testAttr);
               const isSelected = selectedTalla === talla;
@@ -125,6 +130,7 @@ export default function VariantSelector({ variants, onVariantSelect }: Props) {
               const testAttr: Record<string, string> = { diseño };
               if (selectedColor) testAttr.color = selectedColor;
               if (selectedTalla) testAttr.talla = selectedTalla;
+              if (selectedEdicion) testAttr.edicion = selectedEdicion;
               
               const available = isVariantAvailable(testAttr);
               const isSelected = selectedDiseño === diseño;
@@ -144,6 +150,44 @@ export default function VariantSelector({ variants, onVariantSelect }: Props) {
                   }`}
                 >
                   {diseño}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ✅ EDICIÓN (NUEVO) */}
+      {ediciones.length > 0 && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Edición:
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {ediciones.map((edicion) => {
+              const testAttr: Record<string, string> = { edicion };
+              if (selectedColor) testAttr.color = selectedColor;
+              if (selectedTalla) testAttr.talla = selectedTalla;
+              if (selectedDiseño) testAttr.diseño = selectedDiseño;
+              
+              const available = isVariantAvailable(testAttr);
+              const isSelected = selectedEdicion === edicion;
+
+              return (
+                <button
+                  key={edicion}
+                  type="button"
+                  onClick={() => setSelectedEdicion(isSelected ? null : edicion)}
+                  disabled={!available}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium border-2 transition ${
+                    isSelected
+                      ? "border-purple-600 bg-purple-600 text-white"
+                      : available
+                      ? "border-gray-300 bg-white text-gray-700 hover:border-purple-400"
+                      : "border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed line-through"
+                  }`}
+                >
+                  {edicion}
                 </button>
               );
             })}

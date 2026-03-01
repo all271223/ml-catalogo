@@ -126,15 +126,18 @@ export function extractUniqueAttributes(
   colors: string[];
   tallas: string[];
   diseños: string[];
+  ediciones: string[]; // ✅ NUEVO
 } {
   const colors = new Set<string>();
   const tallas = new Set<string>();
   const diseños = new Set<string>();
+  const ediciones = new Set<string>(); // ✅ NUEVO
 
   variants.forEach((v) => {
     if (v.attributes.color) colors.add(v.attributes.color);
     if (v.attributes.talla) tallas.add(v.attributes.talla);
     if (v.attributes.diseño) diseños.add(v.attributes.diseño);
+    if (v.attributes.edicion) ediciones.add(v.attributes.edicion); // ✅ NUEVO
   });
 
   return {
@@ -147,6 +150,7 @@ export function extractUniqueAttributes(
       return a.localeCompare(b);
     }),
     diseños: Array.from(diseños).sort(),
+    ediciones: Array.from(ediciones).sort(), // ✅ NUEVO
   };
 }
 
