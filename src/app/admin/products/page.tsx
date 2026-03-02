@@ -17,8 +17,9 @@ type Product = {
   image_path: string | string[] | null;
   is_visible: boolean;
   created_at: string;
+  barcode: string | null; // ✅ NUEVO
+  sku: string | null; // ✅ NUEVO
 };
-
 export default function AdminProductsPage() {
   const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
@@ -42,78 +43,78 @@ export default function AdminProductsPage() {
   }
 
   async function fetchProducts() {
-  setLoading(true);
+    setLoading(true);
 
-  let allProducts: Product[] = [];
-  const batchSize = 1000;
+    let allProducts: Product[] = [];
+    const batchSize = 1000;
 
-  // Primer lote (los más recientes)
-  const first = await supabasePublic
-    .from("products")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .limit(batchSize);
-
-  if (first.error) {
-    console.error("Error fetching first batch:", first.error);
-    alert("Error al cargar productos");
-    setLoading(false);
-    return;
-  }
-
-  let batch = first.data ?? [];
-  allProducts = allProducts.concat(batch);
-
-  // Mientras sigamos recibiendo batchSize, pedimos más usando cursor (created_at)
-  while (batch.length === batchSize) {
-    const lastItem = batch[batch.length - 1];
-    if (!lastItem || !lastItem.created_at) break;
-
-    const cursor = lastItem.created_at;
-
-    // ✅ Usamos lte en lugar de lt para no perder filas con timestamps iguales
-    const next = await supabasePublic
+    // Primer lote (los más recientes)
+    const first = await supabasePublic
       .from("products")
       .select("*")
-      .lte("created_at", cursor) // ✅ <= en lugar de 
       .order("created_at", { ascending: false })
       .limit(batchSize);
 
-    if (next.error) {
-      console.error("Error fetching next batch:", next.error);
+    if (first.error) {
+      console.error("Error fetching first batch:", first.error);
       alert("Error al cargar productos");
-      break;
+      setLoading(false);
+      return;
     }
 
-    batch = next.data ?? [];
-    if (!batch || batch.length === 0) break;
-
-    // Evitar duplicar el lastItem
-    if (batch[0] && batch[0].id === lastItem.id) {
-      batch = batch.slice(1);
-    }
-
-    if (batch.length === 0) break;
+    let batch = first.data ?? [];
     allProducts = allProducts.concat(batch);
-  }
 
-  // Dedupe por id
-  const map = new Map<string, Product>();
-  for (const p of allProducts) {
-    const existing = map.get(p.id);
-    if (!existing) {
-      map.set(p.id, p);
-    } else {
-      if (new Date(p.created_at) > new Date(existing.created_at)) {
+    // Mientras sigamos recibiendo batchSize, pedimos más usando cursor (created_at)
+    while (batch.length === batchSize) {
+      const lastItem = batch[batch.length - 1];
+      if (!lastItem || !lastItem.created_at) break;
+
+      const cursor = lastItem.created_at;
+
+      // ✅ Usamos lte en lugar de lt para no perder filas con timestamps iguales
+      const next = await supabasePublic
+        .from("products")
+        .select("*")
+        .lte("created_at", cursor) // ✅ <= en lugar de 
+        .order("created_at", { ascending: false })
+        .limit(batchSize);
+
+      if (next.error) {
+        console.error("Error fetching next batch:", next.error);
+        alert("Error al cargar productos");
+        break;
+      }
+
+      batch = next.data ?? [];
+      if (!batch || batch.length === 0) break;
+
+      // Evitar duplicar el lastItem
+      if (batch[0] && batch[0].id === lastItem.id) {
+        batch = batch.slice(1);
+      }
+
+      if (batch.length === 0) break;
+      allProducts = allProducts.concat(batch);
+    }
+
+    // Dedupe por id
+    const map = new Map<string, Product>();
+    for (const p of allProducts) {
+      const existing = map.get(p.id);
+      if (!existing) {
         map.set(p.id, p);
+      } else {
+        if (new Date(p.created_at) > new Date(existing.created_at)) {
+          map.set(p.id, p);
+        }
       }
     }
-  }
-  const deduped = Array.from(map.values());
+    const deduped = Array.from(map.values());
 
-  setProducts(deduped);
-  setLoading(false);
-}
+    setProducts(deduped);
+    setLoading(false);
+  }
 
   async function handleDelete(productId: string, productName: string) {
     const confirmed = confirm(
@@ -137,12 +138,14 @@ export default function AdminProductsPage() {
     }
   }
 
-  // ✅ MODIFICADO: Filtrar por búsqueda Y stock
   const filteredProducts = products.filter((p) => {
     // Filtro de búsqueda
+    const search = searchTerm.toLowerCase();
     const matchesSearch =
-      p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (p.brand && p.brand.toLowerCase().includes(searchTerm.toLowerCase()));
+      p.name.toLowerCase().includes(search) ||
+      (p.brand && p.brand.toLowerCase().includes(search)) ||
+      (p.barcode && p.barcode.toLowerCase().includes(search)) || // ✅ NUEVO
+      (p.sku && p.sku.toLowerCase().includes(search)); // ✅ NUEVO
 
     // Filtro de stock
     const matchesStock = showOnlyInStock ? p.stock > 0 : true;
@@ -192,7 +195,7 @@ export default function AdminProductsPage() {
           {/* Búsqueda */}
           <input
             type="text"
-            placeholder="🔍 Buscar por nombre o marca..."
+            placeholder="🔍 Buscar por nombre, marca, código de barras o SKU..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 mb-4"
@@ -275,8 +278,8 @@ export default function AdminProductsPage() {
                       {/* Badge visible/oculto */}
                       <span
                         className={`px-3 py-1 rounded-full text-xs font-semibold ${product.is_visible
-                            ? "bg-green-100 text-green-700"
-                            : "bg-gray-100 text-gray-600"
+                          ? "bg-green-100 text-green-700"
+                          : "bg-gray-100 text-gray-600"
                           }`}
                       >
                         {product.is_visible ? "Visible" : "Oculto"}
@@ -309,10 +312,10 @@ export default function AdminProductsPage() {
                       Stock:{" "}
                       <span
                         className={`font-semibold ${product.stock === 0
-                            ? "text-red-600"
-                            : product.stock <= 3
-                              ? "text-orange-600"
-                              : "text-gray-900"
+                          ? "text-red-600"
+                          : product.stock <= 3
+                            ? "text-orange-600"
+                            : "text-gray-900"
                           }`}
                       >
                         {product.stock} unidades
